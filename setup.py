@@ -2,26 +2,26 @@ from setuptools import setup, find_packages
 
 setup(
     # Application name:
-    name="corpussearch",
+    name="citableclass",
 
     # Version number (initial):
     version="0.0.1",
 
     # Application author details:
-    author="Malte Vogl",
-    author_email="mvogl@mpiwg-berlin.mpg.de",
+    author="Gordon Fischer",
+    author_email="gordon.fischer@topoi.org",
 
     # Packages
-    packages=["corpussearch"],
+    packages=["citableclass"],
 
     # Include additional files into the package
     include_package_data=True,
 
     # Details
-    url="http://pypi.python.org/pypi/corpussearch/",
-
+    #url="http://pypi.python.org/pypi/citableclass/",
+    url="http://pypi.python.org/pypi/citableclass/",
     license="LICENSE.txt",
-    description="Tools for loading and analyzing large text corpora.",
+    description="Tool for data request",
 
     long_description=open("README.md").read(),
 
@@ -39,16 +39,16 @@ setup(
         'Programming Language :: Python :: 3',
     ],
     project_urls={
-        'Source': 'https://github.com/maltevogl/corpussearch/',
-        'Tracker': 'https://github.com/maltevogl/corpussearch/issues',
+        'Source': 'https://github.com/TOPOI-DH/citableclass/',
+        'Tracker': 'https://github.com/TOPOI-DH/citableclass/issues',
     },
 
-    download_url='https://github.com/maltevogl/corpussearch/archive/0.0.1.tar.gz',
+    download_url='https://github.com/TOPOI-DH/citableclass/archive/0.0.1.tar.gz',
 
     python_requires='>=3',
 
     # Dependent packages (distributions)
     install_requires=[
-        "pandas",
+        "pandas", "matplotlib", "webbrowser", "plyfile", "requests", "urllib", "IPython", "csv", "re", "json"
     ],
 )

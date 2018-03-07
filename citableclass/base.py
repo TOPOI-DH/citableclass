@@ -1,154 +1,247 @@
+from matplotlib.pyplot import *
+import matplotlib.pyplot as plt
+import webbrowser
+from IPython.display import HTML, Image
+from plyfile import PlyData, PlyElement
+import requests
+import urllib.request
+import csv
 import pandas as pd
 import re
-import difflib
+import json
 
-
-class CorpusTextSearch():
-    """
-    This class is initialized with a searchstring, the name of the column,
-    which contains the textstrings, and a path to a pickled dataframe.
-    Optionally, a path to an excel file containing metadata can be provided.
-
-    For other import formats change read_pickle and read_excel accordingly.
-
-    Example:
-            >>> search1 = SearchPhrases(
-                            '[Ss]ol','text,'/path/to/kepler/dataframe'
-                            )
-            True
-    """
-
-    def __init__(
-            self, pathDF,
-            dataType='pickle', dataIndex='multi', colname='text',
-            searchstring=False, pathMeta=False
-            ):
-
-        self.datatype = dataType
-
-        if self.datatype == 'pickle':
-            self.dataframe = pd.read_pickle(pathDF)
-        elif self.datatype == 'excel':
-            self.dataframe = pd.read_excel(pathDF)
-        elif self.datatype == 'csv':
-            self.dataframe = pd.read_csv(pathDF)
-        elif self.datatype == 'json':
-            self.dataframe = pd.read_json(pathDF)
-        else:
-            raise ValueError(
-                'Please provide data in pickle,excel,csv or json format'
-                )
-
-        self.extData = ''
-
-        self.dataindex = dataIndex
-
-        self.levelValues = {}
-
-        if searchstring:
-            self.Kstr = searchstring
-            self.result = self.dataframe[
-                            self.dataframe[self.column].str.contains(self.Kstr)
-                            ]
-        else:
-            self.Kstr = ''
-            self.result = ''
-
-        if pathMeta:
-            self.metaData = pd.read_excel(pathMeta)
-        else:
-            self.metaData = ''
-
-    def resetColWidth(self):
-        """ Reset pandas display option for max_colwidth"""
-        pd.reset_option('display.max_colwidth')
-        return
-
-    def reduce(self, level, value):
-        """ Return reduced dataframe for search tuple (level/column,value):
-            a) as cross-section for multi-index dataframe:
-               df.xs(value,level=level)
-            b) as sub-dataframe for single-index dataframe:
-               df[df.column == value]
-
-            Result is in self.result, to be able to chain reductions.
-            To view result use self.results()
-        """
-        if self.dataindex == 'multi':
-            if level in ['part', 'volume']:
-                if level not in self.levelValues.keys():
-                    self.levelValues[level] = self.dataframe.index.get_level_values(level).unique()
-                else:
-                    pass
-                if value not in self.levelValues[level]:
-                    closestMatch = difflib.get_close_matches(value, self.levelValues[level],1)
-                    if closestMatch:
-                        searchValue = closestMatch[0]
-                    else:
-                        raise ValueError(
-                            'Could not find matching expression to search.'
-                            )
-                else:
-                    searchValue = value
-                if type(self.result) == str:
-                    self.result = self.dataframe.xs(searchValue, level=level)
-                else:
-                    self.result = self.result.xs(searchValue, level=level)
-            else:
-                if type(self.result) == str:
-                    self.result = self.dataframe.xs(value, level=level)
-                else:
-                    self.result = self.dataframe.xs(value, level=level)
-            return self
-
-    def results(self):
-        """Returns the search result as a single-index dataframe."""
-        if self.dataindex == 'multi':
-            self.indexLevels = list(self.result.index.names)
-            formatedResult = self.result.reset_index(level=self.indexLevels)
-        pd.set_option('display.max_colwidth', -1)
-        return formatedResult
-
-    def extResults(self, level):
-        """
-        Returns the search result as a single-index dataframe, extend with
-        metadata on the desired level. The metadata is calculated for all other
-        levels of multi-indexed dataframe.
-        """
-        self.extData = pd.merge(left=self.results(), right=self._metaData(level), on=level)
-        cols = [x for x in self.extData.columns if x != self.column]
-        cols = cols + [self.column]
-        self.extData = self.extData[cols]
-        pd.set_option('display.max_colwidth', -1)
-        return self.extData
-
-    def _countWords(self, level, value):
-        """Helper function to count words on a given level."""
-        text = ' '.join(self.dataframe.xs(value, level=level).text.tolist())
-        numWords = len(re.findall('\w+', text))
-        return numWords
-
-    def _getStatistics(self, level):
-        """Helper function to return statistics on given level."""
-        retDict = {}
-        subLevels = self.indexLevels.copy()
+class Citableloader:
+    def __init__(self, doi):
+        self.url = 'http://dx.doi.org/'+doi
+        self.response0 = requests.get(self.url)
+        self.data = requests.get(self.response0.url + '?getDigitalFormat')
+        self.alternatives=requests.get(self.response0.url + '?getAlternatives')
+        self.alternativefile=requests.get(self.response0.url + '?getAlternativeFile')
+        self.doi=doi
+        r=self.response0.url
+        r=r.split("http://repository.edition-topoi.org/")[1]
+        r=r.split('/')
         try:
-            subLevels.remove(level)
-        except ValueError:
-            print('{0} not in index'.format(level))
+            self.d= re.findall("filename=(.+)", self.data.headers['Content-disposition'])[0].replace('\"','')
+            self.link="http://repository.edition-topoi.org/"+r[1]+'/Repos'+r[1]+'/'+r[1]+r[3]+'/'+self.d
+        except:
+            webbrowser.open(self.url)
+    def description(self):
+        return HTML('<iframe src=http://repositorytest.ancient-astronomy.org/MAPD/RoMAPD/documentation.pdf width=1200 height=550></iframe>')
+    def getdoi(self):
+        return self.doi
+    def response(self):
+        return self.response0.url + '?getDigitalFormat'
+    def json(self):
+        return self.data.json()
+    def df(self):
+        return pd.DataFrame(self.data.json())
+    def alternativefiles(self):
+        return pd.DataFrame(self.alternatives.json())
+    def collection(self):
+        return requests.get(self.response0.url + '?getOverallJSON').json()
+    def metadata(self):
+        b=requests.get(self.response0.url + '?getDigitalFormats').json()
+        c=list(b.keys())
+        finallist=[]
+        for j in range(len(c)):
+            try:
+                gi=list(b[c[j]].keys())
+                finallist.append(( c[j].upper(), ""))
+                for i in range(len(gi)):
+                    finallist.append((gi[i], b[c[j]][gi[i]]))
+            except:
+                pass
+        pd.set_option('max_colwidth',-1)
+        df=pd.DataFrame(finallist)
+        df.columns = [' ', '']
+        df.set_index([' '],drop=True,inplace=True)
+        df=df.style.set_properties(**{'text-align': 'left'})
+        return df
+    def filename(self):
+        return self.d;
+    def datatype(self):
+        f=requests.get(self.response0.url + '?getDigitalFormats').json()
+        return f['Technical characteristics']['Format']
+    def pdf(self):
+        return HTML('<iframe src='+self.link+' width=900 height=550></iframe>')
+    def debook(self):
+        return HTML('<iframe src=''http://edition-topoi.org/dEbook/?pdf='+self.link+' + width=100% height=650></iframe>')
+    def imageshow(self, w=500, h=500):
+        data = requests.get(self.response0.url + '?getDigitalFormat')
+        urllib.request.urlretrieve(data.url, "image.jpg");
+        return Image(filename='image.jpg', width=w, height=h) 
+    def imagesave(self, name="temp.jpg"):
+        data = requests.get(self.response0.url + '?getDigitalFormat')
+        urllib.request.urlretrieve(data.url, name);
+        return;
+    def digilib(self, w=1500, h=1950):
+        path = self.response0.url+'#tabMode'
+        path=path.replace('CitableHandler', 'collection')
+        return HTML('<iframe src='+path+' + width=100% height=650></iframe>')
+    def csv(self):
+        urllib.request.urlretrieve(self.response0.url + '?getDigitalFormat', "temp.csv")
+        return pd.read_csv("temp.csv")
+    def excel(self):
+        urllib.request.urlretrieve(self.response0.url + '?getDigitalFormat', "temp.xls")
+        df = pd.read_excel('temp.xls')
+        return df
+    def ply(self):
+        temppath =self.alternatives.json()
+        for m in range(len(temppath)):
+            if temppath[m]['format'] in ["PLY", "ply"]:
+                temppath=temppath[m]['filename']
+        path=self.response0.url + '?getAlternativeFile='+temppath.format(temppath)
+        r = requests.get(path)
+        with open(temppath,'wb') as w:
+            w.write(r.content)
+        return print("file saved as: "+temppath)
+    def xyz(self):
+        temppath =self.alternatives.json()
+        for m in range(len(temppath)):
+            if temppath[m]['format'] in ["XYZ", "xyz"]:
+                temppath=temppath[m]['filename']
+        path=self.response0.url + '?getAlternativeFile='+temppath.format(temppath)
+        r = requests.get(path)
+        with open(temppath,'wb') as w:
+            w.write(r.content)
+        return temppath
+    def threedview(self):
+        path = self.response0.url+'#tabMode'
+        path=path.replace('CitableHandler', 'collection')
+        return HTML('<iframe src='+path+' + width=100% height=650></iframe>')
+    def landingpage(self):
+        return HTML('<iframe src='+self.url+' + width=120% height=650></iframe>')
+    def citableclass(self):
+        return HTML('<iframe src=http://141.20.159.91/files/documentation/_build/html/topoi.html + width=100% height=650></iframe>')
+    def resource(self):
+        resources=[]
+        with open("../ancientsundials/data/BSDP_objects.cite", encoding="iso-8859-15" ) as data_file:    
+            objectdata= json.load(data_file)
+            objectdatakeys= list(objectdata.keys())
+        def check(doi):
+            val=-1
+            for k in objectdatakeys:
+                try:
+                    if objectdata[k]['doi']==doi:
+                        val=k
+                except:
+                    pass
+            return val;
+        val=check(self.doi)
+        if val==-1:
+            print("the current doi corresponds to a digital resource, it is not a research object!")
+        if val!=-1:
+            try:
+                resourcentypes=list(objectdata[val]["resources"].keys())
+                for m in range(len(resourcentypes)):
+                    try:
+                        for p in range(len(list(objectdata[val]["resources"][resourcentypes[m]].keys()))):
+                            key1=list(objectdata[val]["resources"][resourcentypes[m]].keys())[p]
+                            for j in range(len(objectdata[val]["resources"][resourcentypes[m]][key1]['resources'])):
+                                doi=objectdata[val]["resources"][resourcentypes[m]][key1]['resources'][j]['metadata']['General Information']['DOI']
+                                formats=objectdata[val]["resources"][resourcentypes[m]][key1]['resources'][j]['metadata']['Technical characteristics']['Format']
+                                resources.append((doi, formats))
+                    except:
+                        pass
+            except:
+                pass
+       
+        df=pd.DataFrame(resources)
+        df.rename(columns={0: 'DOI',1: 'Format'}, inplace=True)
+        return df;
+    def digitalresource(self):
+        try:
+            f=requests.get(self.response0.url + '?getDigitalFormats').json()
+            if 'Format' in f['Technical characteristics']:
+                if f['Technical characteristics']['Format'] in ["XLS", "xls"]:
+                    return self.excel()
+                if f['Technical characteristics']['Format'] in ["PDF", "pdf"]:
+                    return self.pdf()
+                if f['Technical characteristics']['Format'] in ["JSON", "json"]:
+                    return self.df()
+                if f['Technical characteristics']['Format'] in ["CSV", "csv"]:
+                    return self.csv()
+                if f['Technical characteristics']['Format'] in ["Image", "image", "Images", "images"]: 
+                    return self.imageshow()
+                if f['Technical characteristics']['Format'] in ["Ply", "ply", "PLY","xyz", "XYZ", "NXS", "nxs"]: 
+                    return self.threedview()
+                if f['Technical characteristics']['Format'] in ["Dataset"]: 
+                    print('You have selected a research object which contains normally more than one digital resource')
+                    return self.resource()
+            if 'Resource Type' in f['Technical characteristics']:
+                if f['Technical characteristics']['Resource Type'] in ["XLS", 'xls']:
+                    return self.excel()
+                if f['Technical characteristics']['Resource Type'] in ["PDF", "pdf"]:
+                    return self.pdf()
+                if f['Technical characteristics']['Resource Type'] in ["JSON", "json"]:
+                    return self.df()
+                if f['Technical characteristics']['Resource Type'] in ["CSV", "csv"]:
+                    return self.csv()
+                if f['Technical characteristics']['Resource Type'] in ["Image", "image", "Images", "images"]: 
+                    return self.imageshow()
+                if f['Technical characteristics']['Resource Type'] in ["Ply", "ply", "PLY","xyz", "XYZ", "NXS", "nxs"]: 
+                    return self.threedview()
+                if f['Technical characteristics']['Resource Type'] in ["Dataset"]: 
+                    print('You have selected a research object which contains normally more than one digital resource')
+                    return self.resource()
+        except:
+            print("no regular format!")
+# Final Function 
+def Citable(f_arg, *argv):
+    """
+    Load resource via a DOI which points to a Citable:
+      call the function:
+      
+        - resource = CitableLoader(DOI)  #for a single DOI
+        - resource = CitableLoader(DOI_1, DOI_2,....,DOI_n) # for more DOIs
+        
+      apply different methods on the resource (resource.func()):
+        - note: 
+          one DOI -> resource.method()
+          more DOI -> resource[i].method() with i=[0,1,...,n]
+      
+        - resource.metadata()  #the corresponding metadata
+        - resource.json() #load json file
+        - resource.df() #load json file as pandas dataframe
+        - resource.debook() # load pdf with interactive tool 'dEbook-Viewer'
+        - resource.pdf() # load PDF with standard viewer
+        - resource.imageshow() # load image and show
+        - resource.imagesave() # save image in local folder
+        - resource.csv() # load csv file
+        - resource.collection() # load overview json (each collections has its own overview json)
+        - resource.docu() # a short introduction of collection & citable  
+        - resource.landingpage() # shows to the landing page of DOI
+        - resource.filename() # returns file name
+        - resource.datatype() # returns type of data (e.g. jpg or pdf)
+        - resource.resource() # returns all digital resources including DOI
+        - resource.getdoi() # returns DOI
+        
+      example:
+        - single DOI: 
+          r=CitableLoader('10.17171/1-3-388-1')
+          r.filename()
+          
+        - two or more DOIs
+          g=CitableLoader('10.17171/1-1-3', '10.17171/1-1-4')
+          g[1].metadata()
+        
+    """
+   
+    if type(f_arg) is pd.core.series.Series:
+        lis = list(f_arg)
+        liste=[]
+        for arg in lis:
+            liste.append(Citableloader(arg))
+    if len(argv)==0 and type(f_arg) is str:
+        liste=Citableloader(f_arg)
+    if len(argv)==0 and type(f_arg) is not str:
+        liste=[]
+        for arg in f_arg:
+            liste.append(Citableloader(arg))
+    if len(argv)!=0:
+        liste=[Citableloader(f_arg)]
+        for arg in argv:
+            liste.append(Citableloader(arg))
+    return liste;
 
-        for part in self.dataframe.index.get_level_values(level).unique():
-            partDict = {}
-            for subLevel in subLevels:
-                num = len(self.dataframe.xs(part, level=level).index.get_level_values(subLevel).unique())
-                if num > 1:
-                    partDict['Num_' + subLevel] = num
-            partDict['words'] = self._countWords(level, part)
-            retDict[part] = partDict
-        return retDict
-
-    def _metaData(self, level):
-        """Helper function to generate dataframe from statistics."""
-        resDict = self._getStatistics(level)
-        self.metaDataFrame = pd.DataFrame(resDict).fillna('1').astype('int').transpose().reset_index().rename({'index': level}, axis=1)
-        return self.metaDataFrame
