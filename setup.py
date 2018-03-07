@@ -5,7 +5,7 @@ setup(
     name="citableclass",
 
     # Version number (initial):
-    version="0.0.1",
+    version="0.0.10",
 
     # Application author details:
     author="Gordon Fischer",
@@ -49,6 +49,6 @@ setup(
 
     # Dependent packages (distributions)
     install_requires=[
-        "pandas", "matplotlib", "webbrowser", "plyfile", "requests", "urllib", "IPython", "csv", "re", "json"
+        "pandas", "matplotlib", "plyfile", "requests",  "IPython"
     ],
 )
