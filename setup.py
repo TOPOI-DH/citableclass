@@ -43,7 +43,7 @@ setup(
         'Tracker': 'https://github.com/TOPOI-DH/citableclass/issues',
     },
 
-    download_url='https://github.com/TOPOI-DH/citableclass/archive/0.0.1.tar.gz',
+    download_url='https://github.com/TOPOI-DH/citableclass/archive/0.0.12.tar.gz',
 
     python_requires='>=3',
 
