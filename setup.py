@@ -12,13 +12,12 @@ setup(
     author_email="gordon.fischer@topoi.org",
 
     # Packages
-    packages=["citableclass"],
+    packages=find_packages(),
 
     # Include additional files into the package
     include_package_data=True,
 
     # Details
-    #url="http://pypi.python.org/pypi/citableclass/",
     url="http://pypi.python.org/pypi/citableclass/",
     license="LICENSE.txt",
     description="Tool for data request",
@@ -49,6 +48,10 @@ setup(
 
     # Dependent packages (distributions)
     install_requires=[
-        "pandas", "matplotlib", "plyfile", "requests",  "IPython"
-    ],
+        "pandas",
+        "matplotlib",
+        "plyfile",
+        "requests",
+        "IPython",
+    ]
 )
