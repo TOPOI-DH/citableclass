@@ -326,22 +326,20 @@ def Citable(f_arg, *argv, formats="doi"):
     return liste
 
 
-# class Citable(object):
-#
-#     def __init__(self, f_arg, *argv, formats="doi"):
-#         if type(f_arg) is pd.core.series.Series:
-#             lis = list(f_arg)
-#             self.liste = []
-#             for arg in lis:
-#                 self.liste.append(Citableloader(arg, types=formats))
-#         if len(argv) == 0 and type(f_arg) is str:
-#             self.liste = Citableloader(f_arg, types=formats)
-#         if len(argv) == 0 and type(f_arg) is not str:
-#             self.liste = []
-#             for arg in f_arg:
-#                 self.liste.append(Citableloader(arg, types=formats))
-#         if len(argv) != 0:
-#             self.liste = [Citableloader(f_arg, types=formats)]
-#             for arg in argv:
-#                 self.liste.append(Citableloader(arg, types=formats))
-#         #return self.liste
+def Citable(self, f_arg, *argv, formats="doi"):
+        if type(f_arg) is pd.core.series.Series:
+            lis = list(f_arg)
+            self.liste = []
+            for arg in lis:
+                self.liste.append(Citableloader(arg, types=formats))
+        if len(argv) == 0 and type(f_arg) is str:
+            self.liste = Citableloader(f_arg, types=formats)
+        if len(argv) == 0 and type(f_arg) is not str:
+            self.liste = []
+            for arg in f_arg:
+                self.liste.append(Citableloader(arg, types=formats))
+        if len(argv) != 0:
+            self.liste = [Citableloader(f_arg, types=formats)]
+            for arg in argv:
+                self.liste.append(Citableloader(arg, types=formats))
+        return self.liste
