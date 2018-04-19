@@ -45,15 +45,14 @@ class Citableloader(object):
         if types == "doi":
             self.url = 'https://dx.doi.org/'+doi
             self.response0 = requests.get(self.url)
-            #if self.response0.url.split('//')[0] == 'http:':
-        #        self.response0.url = re.sub('http', 'https', self.response0.url)
-        #    self.url = self.response0.url
+            if self.response0.url.split('//')[0] == 'http:':
+                self.landingpage_url = re.sub('http', 'https', self.response0.url)
         if types == "et":
             #self.url = 'https://dx.doi.org/'+doi
             #self.response0 = requests.get(self.url)
             collection = re.findall('[A-Z]', doi)[0]
             number = re.sub(collection, '', doi)
-            self.response0.url = 'http://repository.edition-topoi.org/CitableHandler/' + collection + '/single/' + number + '/0'  # +doi[:4]+'/single/'+doi[4:]+'/0'
+            self.response0.url = 'https://repository.edition-topoi.org/CitableHandler/' + collection + '/single/' + number + '/0'  # +doi[:4]+'/single/'+doi[4:]+'/0'
             self.url = self.response0.url
 
         self.data = requests.get(self.response0.url + '?getDigitalFormat')
