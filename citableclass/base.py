@@ -179,7 +179,7 @@ class Citableloader(object):
         return HTML('<iframe src='+path+' + width=100% height=650></iframe>')
 
     def landingpage(self):
-        return HTML('<iframe src='+self.url+' + width=120% height=650></iframe>')
+        return HTML('<iframe src='+self.landingpage_url+' + width=120% height=650></iframe>')
 
     def citableclass(self):
         return HTML('<iframe src=http://141.20.159.91/files/documentation/_build/html/topoi.html + width=100% height=650></iframe>')
@@ -323,22 +323,3 @@ def Citable(f_arg, *argv, formats="doi"):
         for arg in argv:
             liste.append(Citableloader(arg, types=formats))
     return liste
-
-
-def Citable(self, f_arg, *argv, formats="doi"):
-        if type(f_arg) is pd.core.series.Series:
-            lis = list(f_arg)
-            self.liste = []
-            for arg in lis:
-                self.liste.append(Citableloader(arg, types=formats))
-        if len(argv) == 0 and type(f_arg) is str:
-            self.liste = Citableloader(f_arg, types=formats)
-        if len(argv) == 0 and type(f_arg) is not str:
-            self.liste = []
-            for arg in f_arg:
-                self.liste.append(Citableloader(arg, types=formats))
-        if len(argv) != 0:
-            self.liste = [Citableloader(f_arg, types=formats)]
-            for arg in argv:
-                self.liste.append(Citableloader(arg, types=formats))
-        return self.liste

@@ -1,1 +1,1 @@
-from .base import Citable as citable
+from .base import Citable
