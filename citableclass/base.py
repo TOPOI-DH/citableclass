@@ -10,6 +10,10 @@ import pandas as pd
 import re
 import json
 
+import os
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
+
 
 class Citableloader(object):
     """
@@ -42,22 +46,27 @@ class Citableloader(object):
 
     """
     def __init__(self, doi, types):
-        if types == "doi":
-            self.url = 'https://dx.doi.org/'+doi
-            self.response0 = requests.get(self.url)
-            if self.response0.url.split('//')[0] == 'http:':
-                self.landingpage_url = re.sub('http', 'https', self.response0.url)
-        if types == "et":
-            #self.url = 'https://dx.doi.org/'+doi
-            #self.response0 = requests.get(self.url)
-            collection = re.findall('[A-Z]', doi)[0]
-            number = re.sub(collection, '', doi)
-            self.response0.url = 'https://repository.edition-topoi.org/CitableHandler/' + collection + '/single/' + number + '/0'  # +doi[:4]+'/single/'+doi[4:]+'/0'
-            self.url = self.response0.url
+        self.chain_path = os.path.join(dir_path, 'repro_et_chain.pem')
 
-        self.data = requests.get(self.response0.url + '?getDigitalFormat')
-        self.alternatives = requests.get(self.response0.url + '?getAlternatives')
-        self.alternativefile = requests.get(self.response0.url + '?getAlternativeFile')
+        if types == "doi":
+            doVerify = True
+            self.url = 'https://dx.doi.org/'+doi
+            self.response0 = requests.get(self.url, verify=doVerify)
+            if self.response0.url.split('//')[0] == 'http:':
+                self.landingpage_url = re.sub('CitableHandler','collection',re.sub('http', 'https', self.response0.url))
+        if types == "et":
+            doVerify = self.chain_path
+            collection = re.findall('[A-Z]{4}|[A-Z]{3}', doi)[0]
+            number = re.sub(collection, '', doi)
+            self.url = 'https://repository.edition-topoi.org/CitableHandler/' + collection + '/single/' + number + '/0'
+            self.landingpage_url = re.sub('CitableHandler','collection',self.url)
+            self.response0 = requests.get(self.url, verify=doVerify)
+            # self.response0.url = 'https://repository.edition-topoi.org/CitableHandler/' + collection + '/single/' + number + '/0'  # +doi[:4]+'/single/'+doi[4:]+'/0'
+            # self.url = self.response0.url
+
+        self.data = requests.get(self.response0.url + '?getDigitalFormat', verify=doVerify)
+        self.alternatives = requests.get(self.response0.url + '?getAlternatives', verify=doVerify)
+        self.alternativefile = requests.get(self.response0.url + '?getAlternativeFile', verify=doVerify)
         self.doi = doi
         r = self.response0.url
         try:
@@ -93,10 +102,10 @@ class Citableloader(object):
         return pd.DataFrame(self.alternatives.json())
 
     def collection(self):
-        return requests.get(self.response0.url + '?getOverallJSON').json()
+        return requests.get(self.response0.url + '?getOverallJSON', verify=doVerify).json()
 
     def metadata(self):
-        b = requests.get(self.response0.url + '?getDigitalFormats').json()
+        b = requests.get(self.response0.url + '?getDigitalFormats', verify=doVerify).json()
         c = list(b.keys())
         finallist = []
         for j in range(len(c)):
@@ -118,7 +127,7 @@ class Citableloader(object):
         return self.d
 
     def datatype(self):
-        f = requests.get(self.response0.url + '?getDigitalFormats').json()
+        f = requests.get(self.response0.url + '?getDigitalFormats', verify=doVerify).json()
         return f['Technical characteristics']['Format']
 
     def pdf(self):
@@ -128,12 +137,12 @@ class Citableloader(object):
         return HTML('<iframe src=''https://edition-topoi.org/dEbook/?pdf='+self.link+' + width=100% height=650></iframe>')
 
     def imageshow(self, w=500, h=500):
-        data = requests.get(self.response0.url + '?getDigitalFormat')
+        data = requests.get(self.response0.url + '?getDigitalFormat', verify=doVerify)
         urllib.request.urlretrieve(data.url, "image.jpg");
         return Image(filename='image.jpg', width=w, height=h)
 
     def imagesave(self, name="temp.jpg"):
-        data = requests.get(self.response0.url + '?getDigitalFormat')
+        data = requests.get(self.response0.url + '?getDigitalFormat', verify=doVerify)
         urllib.request.urlretrieve(data.url, name);
         return
 
@@ -157,7 +166,7 @@ class Citableloader(object):
             if temppath[m]['format'] in ["PLY", "ply"]:
                 temppath = temppath[m]['filename']
         path = self.response0.url + '?getAlternativeFile='+temppath.format(temppath)
-        r = requests.get(path)
+        r = requests.get(path, verify=doVerify)
         with open(temppath, 'wb') as w:
             w.write(r.content)
         return print("file saved as: "+temppath)
@@ -166,9 +175,10 @@ class Citableloader(object):
         temppath = self.alternatives.json()
         for m in range(len(temppath)):
             if temppath[m]['format'] in ["XYZ", "xyz"]:
-                temppath = temppath[m]['filename']
-        path = self.response0.url + '?getAlternativeFile='+temppath.format(temppath)
-        r = requests.get(path)
+                filename = temppath[m]['filename']
+        # TODO: Fix for empty filename 
+        path = self.response0.url + '?getAlternativeFile='+filename
+        r = requests.get(path, verify=doVerify)
         with open(temppath, 'wb') as w:
             w.write(r.content)
         return temppath
@@ -187,8 +197,8 @@ class Citableloader(object):
     def resource(self):
         resources = []
         collectiondoi = self.doi.split("-")[0]+"-"+self.doi.split("-")[1]
-        self.response0 = requests.get(collectiondoi)
-        objectdata = requests.get(self.response0.url + '?getOverallJSON').json()
+        self.response0 = requests.get(collectiondoi, verify=doVerify)
+        objectdata = requests.get(self.response0.url + '?getOverallJSON', verify=doVerify).json()
         objectdatakeys = list(objectdata.keys())
 
         def check(doi):
@@ -230,7 +240,7 @@ class Citableloader(object):
 
     def digitalresource(self):
         try:
-            f = requests.get(self.response0.url + '?getDigitalFormats').json()
+            f = requests.get(self.response0.url + '?getDigitalFormats', verify=doVerify).json()
             if 'Format' in f['Technical characteristics']:
                 if f['Technical characteristics']['Format'] in ["XLS", "xls"]:
                     return self.excel()
