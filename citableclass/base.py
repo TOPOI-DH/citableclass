@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 from matplotlib.pyplot import *
 import matplotlib.pyplot as plt
-from IPython.display import HTML, Image
+from IPython.display import HTML, Image, clear_output
+import ipywidgets as widgets
 from plyfile import PlyData, PlyElement
 import requests
 import urllib.request
@@ -9,10 +10,7 @@ import csv
 import pandas as pd
 import re
 import json
-
 import os
-
-dir_path = os.path.dirname(os.path.realpath(__file__))
 
 
 class Citableloader(object):
@@ -46,27 +44,24 @@ class Citableloader(object):
 
     """
     def __init__(self, doi, types):
-        self.chain_path = os.path.join(dir_path, 'repro_et_chain.pem')
-
+        self.doVerify = True
         if types == "doi":
-            doVerify = True
             self.url = 'https://dx.doi.org/'+doi
-            self.response0 = requests.get(self.url, verify=doVerify)
+            self.response0 = requests.get(self.url, verify=self.doVerify)
             if self.response0.url.split('//')[0] == 'http:':
                 self.landingpage_url = re.sub('CitableHandler','collection',re.sub('http', 'https', self.response0.url))
         if types == "et":
-            doVerify = self.chain_path
             collection = re.findall('[A-Z]{4}|[A-Z]{3}', doi)[0]
             number = re.sub(collection, '', doi)
             self.url = 'https://repository.edition-topoi.org/CitableHandler/' + collection + '/single/' + number + '/0'
             self.landingpage_url = re.sub('CitableHandler','collection',self.url)
-            self.response0 = requests.get(self.url, verify=doVerify)
+            self.response0 = requests.get(self.url, verify=self.doVerify)
             # self.response0.url = 'https://repository.edition-topoi.org/CitableHandler/' + collection + '/single/' + number + '/0'  # +doi[:4]+'/single/'+doi[4:]+'/0'
             # self.url = self.response0.url
 
-        self.data = requests.get(self.response0.url + '?getDigitalFormat', verify=doVerify)
-        self.alternatives = requests.get(self.response0.url + '?getAlternatives', verify=doVerify)
-        self.alternativefile = requests.get(self.response0.url + '?getAlternativeFile', verify=doVerify)
+        self.data = requests.get(self.response0.url + '?getDigitalFormat', verify=self.doVerify)
+        self.alternatives = requests.get(self.response0.url + '?getAlternatives', verify=self.doVerify)
+        self.alternativefile = requests.get(self.response0.url + '?getAlternativeFile', verify=self.doVerify)
         self.doi = doi
         r = self.response0.url
         try:
@@ -102,10 +97,10 @@ class Citableloader(object):
         return pd.DataFrame(self.alternatives.json())
 
     def collection(self):
-        return requests.get(self.response0.url + '?getOverallJSON', verify=doVerify).json()
+        return requests.get(self.response0.url + '?getOverallJSON', verify=self.doVerify).json()
 
     def metadata(self):
-        b = requests.get(self.response0.url + '?getDigitalFormats', verify=doVerify).json()
+        b = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
         c = list(b.keys())
         finallist = []
         for j in range(len(c)):
@@ -127,7 +122,7 @@ class Citableloader(object):
         return self.d
 
     def datatype(self):
-        f = requests.get(self.response0.url + '?getDigitalFormats', verify=doVerify).json()
+        f = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
         return f['Technical characteristics']['Format']
 
     def pdf(self):
@@ -137,12 +132,12 @@ class Citableloader(object):
         return HTML('<iframe src=''https://edition-topoi.org/dEbook/?pdf='+self.link+' + width=100% height=650></iframe>')
 
     def imageshow(self, w=500, h=500):
-        data = requests.get(self.response0.url + '?getDigitalFormat', verify=doVerify)
+        data = requests.get(self.response0.url + '?getDigitalFormat', verify=self.doVerify)
         urllib.request.urlretrieve(data.url, "image.jpg");
         return Image(filename='image.jpg', width=w, height=h)
 
     def imagesave(self, name="temp.jpg"):
-        data = requests.get(self.response0.url + '?getDigitalFormat', verify=doVerify)
+        data = requests.get(self.response0.url + '?getDigitalFormat', verify=self.doVerify)
         urllib.request.urlretrieve(data.url, name);
         return
 
@@ -160,32 +155,53 @@ class Citableloader(object):
         df = pd.read_excel('temp.xls')
         return df
 
-    def ply(self):
-        temppath = self.alternatives.json()
-        for m in range(len(temppath)):
-            if temppath[m]['format'] in ["PLY", "ply"]:
-                temppath = temppath[m]['filename']
-        path = self.response0.url + '?getAlternativeFile='+temppath.format(temppath)
-        r = requests.get(path, verify=doVerify)
-        with open(temppath, 'wb') as w:
-            w.write(r.content)
-        return print("file saved as: "+temppath)
+    def threedget(self, buttonInstance=False, filePath=False, dataTyp=False):
+        files = self.alternatives.json()
+        try:
+            self.threedFormat
+        except:
+            self.threedFormat = 'ply'
+        if dataTyp:
+            self.threedFormat = dataTyp
+        filenames = []
+        for file in files:
+            ext = file['filename'].split('.')[-1]
+            if ext.lower() == self.threedFormat:
+                filenames.append(file)
+        # for m in range(len(files)):
+        #    if files[m]['format'] in [self.threedFormat, self.threedFormat.upper()]:
+        #         filenames.append(files[m]['filename'])
+        if filenames:
+            for filename in filenames:
+                url = self.response0.url + '?getAlternativeFile='+ filename
+                r = requests.get(url, verify=self.doVerify)
+                if not filePath:
+                    filePath = filename
+                else:
+                    filePath = os.path.join(filePath, filename)
+                with open(filePath, 'wb') as w:
+                    w.write(r.content)
+                if buttonInstance:
+                    with self.out:
+                        print('Downloaded {0}'.format(filePath))
+                return filePath
+        else:
+            print('No {0} file found.'.format(self.threedFormat))
+            return None
 
-    def xyz(self):
-        temppath = self.alternatives.json()
-        for m in range(len(temppath)):
-            if temppath[m]['format'] in ["XYZ", "xyz"]:
-                filename = temppath[m]['filename']
-        # TODO: Fix for empty filename 
-        path = self.response0.url + '?getAlternativeFile='+filename
-        r = requests.get(path, verify=doVerify)
-        with open(temppath, 'wb') as w:
-            w.write(r.content)
-        return temppath
 
-    def threedview(self):
+    def threedview(self, dataTyp = 'ply'):
+        self.threedFormat = dataTyp
         path = self.response0.url+'#tabMode'
         path = path.replace('CitableHandler', 'collection')
+        download = widgets.Button(
+            description='Download 3D data',
+            )
+        self.out = widgets.Output()
+        download.on_click(
+            self.threedget
+        )
+        display(download, self.out)
         return HTML('<iframe src='+path+' + width=100% height=650></iframe>')
 
     def landingpage(self):
@@ -197,8 +213,8 @@ class Citableloader(object):
     def resource(self):
         resources = []
         collectiondoi = self.doi.split("-")[0]+"-"+self.doi.split("-")[1]
-        self.response0 = requests.get(collectiondoi, verify=doVerify)
-        objectdata = requests.get(self.response0.url + '?getOverallJSON', verify=doVerify).json()
+        self.response0 = requests.get(collectiondoi, verify=self.doVerify)
+        objectdata = requests.get(self.response0.url + '?getOverallJSON', verify=self.doVerify).json()
         objectdatakeys = list(objectdata.keys())
 
         def check(doi):
@@ -240,37 +256,39 @@ class Citableloader(object):
 
     def digitalresource(self):
         try:
-            f = requests.get(self.response0.url + '?getDigitalFormats', verify=doVerify).json()
+            f = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
             if 'Format' in f['Technical characteristics']:
-                if f['Technical characteristics']['Format'] in ["XLS", "xls"]:
+                format = f['Technical characteristics']['Format']
+                if format in ["XLS", "xls"]:
                     return self.excel()
-                if f['Technical characteristics']['Format'] in ["PDF", "pdf"]:
+                if format in ["PDF", "pdf"]:
                     return self.pdf()
-                if f['Technical characteristics']['Format'] in ["JSON", "json"]:
+                if format in ["JSON", "json"]:
                     return self.df()
-                if f['Technical characteristics']['Format'] in ["CSV", "csv"]:
+                if format in ["CSV", "csv"]:
                     return self.csv()
-                if f['Technical characteristics']['Format'] in ["Image", "image", "Images", "images"]:
+                if format in ["Image", "image", "Images", "images"]:
                     return self.imageshow()
-                if f['Technical characteristics']['Format'] in ["Ply", "ply", "PLY", "xyz", "XYZ", "NXS", "nxs"]:
-                    return self.threedview()
-                if f['Technical characteristics']['Format'] in ["Dataset"]:
+                if format in ["Ply", "ply", "PLY", "xyz", "XYZ", "NXS", "nxs"]:
+                    return self.threedview(dataTyp=format.lower())
+                if format in ["Dataset"]:
                     print('You have selected a research object which contains normally more than one digital resource')
                     return self.resource()
             if 'Resource Type' in f['Technical characteristics']:
-                if f['Technical characteristics']['Resource Type'] in ["XLS", 'xls']:
+                resources = f['Technical characteristics']['Resource Type']
+                if resources in ["XLS", 'xls']:
                     return self.excel()
-                if f['Technical characteristics']['Resource Type'] in ["PDF", "pdf"]:
+                if resources in ["PDF", "pdf"]:
                     return self.pdf()
-                if f['Technical characteristics']['Resource Type'] in ["JSON", "json"]:
+                if resources in ["JSON", "json"]:
                     return self.df()
-                if f['Technical characteristics']['Resource Type'] in ["CSV", "csv"]:
+                if resources in ["CSV", "csv"]:
                     return self.csv()
-                if f['Technical characteristics']['Resource Type'] in ["Image", "image", "Images", "images"]:
+                if resources in ["Image", "image", "Images", "images"]:
                     return self.imageshow()
-                if f['Technical characteristics']['Resource Type'] in ["Ply", "ply", "PLY", "xyz", "XYZ", "NXS", "nxs"]:
-                    return self.threedview()
-                if f['Technical characteristics']['Resource Type'] in ["Dataset"]:
+                if resources in ["Ply", "ply", "PLY", "xyz", "XYZ", "NXS", "nxs"]:
+                    return self.threedview(dataTyp=format.lower())
+                if resources in ["Dataset"]:
                     print('You have selected a research object which contains normally more than one digital resource')
                     return self.resource()
         except:
