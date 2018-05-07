@@ -163,16 +163,16 @@ class Citableloader(object):
             self.threedFormat = 'ply'
         if dataTyp:
             self.threedFormat = dataTyp
-        filenames = []
+        self.threedFilenames = []
         for file in files:
             ext = file['filename'].split('.')[-1]
             if ext.lower() == self.threedFormat:
-                filenames.append(file)
+                self.threedFilenames.append(file['filename'])
         # for m in range(len(files)):
         #    if files[m]['format'] in [self.threedFormat, self.threedFormat.upper()]:
         #         filenames.append(files[m]['filename'])
-        if filenames:
-            for filename in filenames:
+        if self.threedFilenames:
+            for filename in self.threedFilenames:
                 url = self.response0.url + '?getAlternativeFile='+ filename
                 r = requests.get(url, verify=self.doVerify)
                 if not filePath:
