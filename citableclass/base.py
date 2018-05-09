@@ -126,8 +126,15 @@ class Citableloader(object):
         return self.d
 
     def datatype(self):
-        f = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
-        return f['Technical characteristics']['Format']
+        try:
+            f = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
+            if 'Format' in f['Technical characteristics']:
+                ret = f['Technical characteristics']['Format']
+            elif 'Resource Type' in f['Technical characteristics']:
+                ret = f['Technical characteristics']['Resource Type']
+        except:
+            raise ValueError("Can not determine regular format!")
+        return ret
 
     def pdf(self):
         return HTML('<iframe src='+self.link+' width=900 height=550></iframe>')
@@ -192,8 +199,7 @@ class Citableloader(object):
             print('No {0} file found.'.format(self.threedFormat))
             return None
 
-    def threedview(self, dataTyp='ply'):
-        self.threedFormat = dataTyp
+    def threedview(self):
         path = self.response0.url+'#tabMode'
         path = path.replace('CitableHandler', 'collection')
         download = widgets.Button(
@@ -254,47 +260,28 @@ class Citableloader(object):
         return df
 
     def digitalresource(self):
-        try:
-            f = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
-            if 'Format' in f['Technical characteristics']:
-                format = f['Technical characteristics']['Format']
-                if format in ["XLS", "xls"]:
-                    return self.excel()
-                if format in ["PDF", "pdf"]:
-                    return self.pdf()
-                if format in ["JSON", "json"]:
-                    return self.df()
-                if format in ["CSV", "csv"]:
-                    return self.csv()
-                if format in ["Image", "image", "Images", "images"]:
-                    return self.imageshow()
-                if format in ["Ply", "ply", "PLY", "xyz", "XYZ", "NXS", "nxs"]:
-                    return self.threedview(dataTyp=format.lower())
-                if format in ["Dataset"]:
-                    print('You have selected a research object which contains normally more than one digital resource')
-                    return self.resource()
-            if 'Resource Type' in f['Technical characteristics']:
-                resources = f['Technical characteristics']['Resource Type']
-                if resources in ["XLS", 'xls']:
-                    return self.excel()
-                if resources in ["PDF", "pdf"]:
-                    return self.pdf()
-                if resources in ["JSON", "json"]:
-                    return self.df()
-                if resources in ["CSV", "csv"]:
-                    return self.csv()
-                if resources in ["Image", "image", "Images", "images"]:
-                    return self.imageshow()
-                if resources in ["Ply", "ply", "PLY", "xyz", "XYZ", "NXS", "nxs"]:
-                    return self.threedview(dataTyp=format.lower())
-                if resources in ["Dataset"]:
-                    print('You have selected a research object which contains normally more than one digital resource')
-                    return self.resource()
-        except:
-            print("no regular format!")
+        format = self.datatype().lower()
+        if format in ['ply', 'nxs', 'xyz']:
+            self.threedFormat = format
+
+        functionMap = {
+            'xls': self.excel,
+            'pdf': self.pdf,
+            'json': self.json,
+            'csv': self.csv,
+            'image': self.imageshow,
+            'images': self.imageshow,
+            'jpg': self.imageshow,
+            'ply': self.threedview,
+            'xyz': self.threedview,
+            'nxs': self.threedview,
+            'dataset': self.resource,
+        }
+
+        return functionMap[format]()
 
 
-#Final Function
+# Final Function
 def Citable(f_arg, *argv, formats="doi"):
     """
     Load resource via a DOI which points to a Citable:
