@@ -218,7 +218,7 @@ class Citableloader(object):
     def resource(self):
         resources = []
         collectiondoi = self.doi.split("-")[0]+"-"+self.doi.split("-")[1]
-        self.response0 = requests.get(collectiondoi, verify=self.doVerify)
+        self.response0 = requests.get('https://dx.doi.org/{0}'.format(collectiondoi), verify=self.doVerify)
         objectdata = requests.get(self.response0.url + '?getOverallJSON', verify=self.doVerify).json()
         objectdatakeys = list(objectdata.keys())
 
