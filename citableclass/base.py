@@ -7,6 +7,7 @@ from plyfile import PlyData, PlyElement
 import requests
 import urllib.request
 import csv
+import codecs
 import pandas as pd
 import re
 import json
@@ -49,12 +50,15 @@ class Citableloader(object):
             self.url = 'https://dx.doi.org/'+doi
             self.response0 = requests.get(self.url, verify=self.doVerify)
             if self.response0.url.split('//')[0] == 'http:':
-                self.landingpage_url = re.sub('CitableHandler','collection',re.sub('http', 'https', self.response0.url))
+                self.landingpage_url = re.sub('CitableHandler', 'collection', re.sub('http', 'https', self.response0.url))
         if types == "et":
             collection = re.findall('[A-Z]{4}|[A-Z]{3}', doi)[0]
             number = re.sub(collection, '', doi)
-            self.url = 'https://repository.edition-topoi.org/CitableHandler/' + collection + '/single/' + number + '/0'
-            self.landingpage_url = re.sub('CitableHandler','collection',self.url)
+            if '/' in number:
+                self.url = 'https://repository.edition-topoi.org/CitableHandler/' + collection + '/single/' + number
+            else:
+                self.url = 'https://repository.edition-topoi.org/CitableHandler/' + collection + '/single/' + number + '/0'
+            self.landingpage_url = re.sub('CitableHandler', 'collection', self.url)
             self.response0 = requests.get(self.url, verify=self.doVerify)
             # self.response0.url = 'https://repository.edition-topoi.org/CitableHandler/' + collection + '/single/' + number + '/0'  # +doi[:4]+'/single/'+doi[4:]+'/0'
             # self.url = self.response0.url
@@ -133,13 +137,13 @@ class Citableloader(object):
 
     def imageshow(self, w=500, h=500):
         data = requests.get(self.response0.url + '?getDigitalFormat', verify=self.doVerify)
-        urllib.request.urlretrieve(data.url, "image.jpg");
-        return Image(filename='image.jpg', width=w, height=h)
+        return Image(url=data.url, width=w, height=h)
 
     def imagesave(self, name="temp.jpg"):
         data = requests.get(self.response0.url + '?getDigitalFormat', verify=self.doVerify)
-        urllib.request.urlretrieve(data.url, name);
-        return
+        with open(name, 'wb') as file:
+            file.write(data.content)
+        return name
 
     def digilib(self, w=1500, h=1950):
         path = self.response0.url+'#tabMode'
@@ -147,13 +151,15 @@ class Citableloader(object):
         return HTML('<iframe src='+path+' + width=100% height=650></iframe>')
 
     def csv(self):
-        urllib.request.urlretrieve(self.response0.url + '?getDigitalFormat', "temp.csv")
-        return pd.read_csv("temp.csv")
+        text = self.data.iter_lines()
+        ret = csv.reader(codecs.iterdecode(text, 'utf8'), delimiter=',')
+        return ret
 
-    def excel(self):
-        urllib.request.urlretrieve(self.response0.url + '?getDigitalFormat', "temp.xls")
-        df = pd.read_excel('temp.xls')
-        return df
+    def excel(self, name='./temp.xlsx'):
+        data = self.data.content
+        with open(name, 'wb') as file:
+            file.write(data)
+        return name
 
     def threedget(self, buttonInstance=False, filePath=False, dataTyp=False):
         files = self.alternatives.json()
@@ -168,12 +174,9 @@ class Citableloader(object):
             ext = file['filename'].split('.')[-1]
             if ext.lower() == self.threedFormat:
                 self.threedFilenames.append(file['filename'])
-        # for m in range(len(files)):
-        #    if files[m]['format'] in [self.threedFormat, self.threedFormat.upper()]:
-        #         filenames.append(files[m]['filename'])
         if self.threedFilenames:
             for filename in self.threedFilenames:
-                url = self.response0.url + '?getAlternativeFile='+ filename
+                url = self.response0.url + '?getAlternativeFile=' + filename
                 r = requests.get(url, verify=self.doVerify)
                 if not filePath:
                     filePath = filename
@@ -189,8 +192,7 @@ class Citableloader(object):
             print('No {0} file found.'.format(self.threedFormat))
             return None
 
-
-    def threedview(self, dataTyp = 'ply'):
+    def threedview(self, dataTyp='ply'):
         self.threedFormat = dataTyp
         path = self.response0.url+'#tabMode'
         path = path.replace('CitableHandler', 'collection')
@@ -206,9 +208,6 @@ class Citableloader(object):
 
     def landingpage(self):
         return HTML('<iframe src='+self.landingpage_url+' + width=120% height=650></iframe>')
-
-    def citableclass(self):
-        return HTML('<iframe src=http://141.20.159.91/files/documentation/_build/html/topoi.html + width=100% height=650></iframe>')
 
     def resource(self):
         resources = []
