@@ -60,6 +60,10 @@ class Citableloader(object):
                 self.url = 'https://repository.edition-topoi.org/CitableHandler/' + collection + '/single/' + number + '/0'
             self.landingpage_url = re.sub('CitableHandler', 'collection', self.url)
             self.response0 = requests.get(self.url, verify=self.doVerify)
+        if types == "dev":
+            self.url = 'http://dx.doi.org/'+doi
+            self.response0 = requests.get(self.url)
+            self.response0.url = 'http://repositorytest.ancient-astronomy.org/CitableHandler/'+doi[:4]+'/single/'+doi[4:]+'/0'
             # self.response0.url = 'https://repository.edition-topoi.org/CitableHandler/' + collection + '/single/' + number + '/0'  # +doi[:4]+'/single/'+doi[4:]+'/0'
             # self.url = self.response0.url
 
@@ -71,11 +75,17 @@ class Citableloader(object):
         try:
             r = r.split("https://repository.edition-topoi.org/")[1]
         except:
-            r = r.split("http://repository.edition-topoi.org/")[1]
+            if types in ['doi', 'et']:
+                r = r.split("http://repository.edition-topoi.org/")[1]
+            elif types == 'dev':
+                r = r.split("http://repositorytest.ancient-astronomy.org/")[1]
         r = r.split('/')
         try:
             self.d = re.findall("filename=(.+)", self.data.headers['Content-disposition'])[0].replace('\"', '')
-            self.link = "http://repository.edition-topoi.org/"+r[1]+'/Repos'+r[1]+'/'+r[1]+r[3]+'/'+self.d
+            if types in ['doi', 'et']:
+                self.link = "http://repository.edition-topoi.org/"+r[1]+'/Repos'+r[1]+'/'+r[1]+r[3]+'/'+self.d
+            elif types == 'dev':
+                self.link = "http://repositorytest.ancient-astronomy.org/"+r[1]+'/Repos'+r[1]+'/'+r[1]+r[3]+'/'+self.d
         except:
             pass
 
@@ -102,6 +112,19 @@ class Citableloader(object):
 
     def collection(self):
         return requests.get(self.response0.url + '?getOverallJSON', verify=self.doVerify).json()
+
+    def status(self):
+        try:
+            obj = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
+            res = {
+                "Object": obj["General Information"]["Identifier"],
+                "Status": obj["General Information"]["Status"],
+                "Version": obj["General Information"]["Dev-Version"]
+                }
+            return res
+
+        except:
+            print("digital resource has publication status")
 
     def metadata(self):
         b = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
@@ -163,6 +186,12 @@ class Citableloader(object):
         return ret
 
     def excel(self, name='./temp.xlsx'):
+        data = self.data.content
+        with open(name, 'wb') as file:
+            file.write(data)
+        return name
+
+    def pickle(self, name='./temp.pickle'):
         data = self.data.content
         with open(name, 'wb') as file:
             file.write(data)
@@ -276,6 +305,7 @@ class Citableloader(object):
             'xyz': self.threedview,
             'nxs': self.threedview,
             'dataset': self.resource,
+            'pickle': self.pickle,
         }
 
         return functionMap[format]()

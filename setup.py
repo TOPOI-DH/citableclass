@@ -5,10 +5,10 @@ setup(
     name="citableclass",
 
     # Version number (initial):
-    version="0.0.12",
+    version="0.0.13",
 
     # Application author details:
-    author="Gordon Fischer",
+    author="Gordon Fischer, Malte Vogl",
     author_email="gordon.fischer@topoi.org",
 
     # Packages
