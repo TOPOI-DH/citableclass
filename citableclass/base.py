@@ -61,11 +61,14 @@ class Citableloader(object):
             self.landingpage_url = re.sub('CitableHandler', 'collection', self.url)
             self.response0 = requests.get(self.url, verify=self.doVerify)
         if types == "dev":
-            self.url = 'http://dx.doi.org/'+doi
-            self.response0 = requests.get(self.url)
-            self.response0.url = 'http://repositorytest.ancient-astronomy.org/CitableHandler/'+doi[:4]+'/single/'+doi[4:]+'/0'
-            # self.response0.url = 'https://repository.edition-topoi.org/CitableHandler/' + collection + '/single/' + number + '/0'  # +doi[:4]+'/single/'+doi[4:]+'/0'
-            # self.url = self.response0.url
+            collection = re.findall('[A-Z]{4}|[A-Z]{3}', doi)[0]
+            number = re.sub(collection, '', doi)
+            if '/' in number:
+                self.url = 'http://repositorytest.ancient-astronomy.org/CitableHandler/' + collection + '/single/' + number
+            else:
+                self.url = 'http://repositorytest.ancient-astronomy.org/CitableHandler/' + collection + '/single/' + number + '/0'
+            self.landingpage_url = re.sub('CitableHandler', 'collection', self.url)
+            self.response0 = requests.get(self.url, verify=self.doVerify)
 
         self.data = requests.get(self.response0.url + '?getDigitalFormat', verify=self.doVerify)
         self.alternatives = requests.get(self.response0.url + '?getAlternatives', verify=self.doVerify)

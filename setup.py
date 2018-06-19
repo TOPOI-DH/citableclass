@@ -5,7 +5,7 @@ setup(
     name="citableclass",
 
     # Version number (initial):
-    version="0.0.13",
+    version="0.0.14",
 
     # Application author details:
     author="Gordon Fischer, Malte Vogl",
@@ -42,7 +42,7 @@ setup(
         'Tracker': 'https://github.com/TOPOI-DH/citableclass/issues',
     },
 
-    download_url='https://github.com/TOPOI-DH/citableclass/archive/0.0.13.tar.gz',
+    download_url='https://github.com/TOPOI-DH/citableclass/archive/0.0.14.tar.gz',
 
     python_requires='>=3',
 
