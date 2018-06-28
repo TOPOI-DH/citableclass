@@ -119,15 +119,18 @@ class Citableloader(object):
     def status(self):
         try:
             obj = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
-            res = {
-                "Object": obj["General Information"]["Identifier"],
-                "Status": obj["General Information"]["Status"],
-                "Version": obj["General Information"]["Dev-Version"]
-                }
-            return res
-
+            try:
+                res = {
+                    "Object": obj["General Information"]["Identifier"],
+                    "Status": obj["General Information"]["Status"],
+                    "Version": obj["General Information"]["Dev-Version"]
+                    }
+                return res
+            except:
+                print("digital resource has publication status")
         except:
-            print("digital resource has publication status")
+            print('Can not find object.')
+
 
     def metadata(self):
         b = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
