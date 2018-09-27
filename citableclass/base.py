@@ -3,7 +3,6 @@ from matplotlib.pyplot import *
 import matplotlib.pyplot as plt
 from IPython.display import HTML, Image, clear_output
 import ipywidgets as widgets
-from plyfile import PlyData, PlyElement
 import requests
 import urllib.request
 import csv

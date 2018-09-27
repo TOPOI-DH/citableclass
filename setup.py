@@ -50,7 +50,6 @@ setup(
     install_requires=[
         "pandas",
         "matplotlib",
-        "plyfile",
         "requests",
         "IPython",
     ]
