@@ -304,7 +304,11 @@ class Citableloader(object):
             try:
                 df = pd.read_json(self.jsonOriented(), orient='table')
             except:
+                pass
+            try:
                 df = pd.read_json(json.dumps(self.json()))
+            except:
+                raise ValueError('Could not decode file format: {0}. Is it a JSON file?'.format(format))
             return df
 
         if format in ['ply', 'nxs', 'xyz']:
