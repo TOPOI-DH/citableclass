@@ -97,7 +97,7 @@ class Citableloader(object):
             except:
                 pass
         elif types == 'local':
-            with open(path,'r') as file:
+            with open(self.path,'r') as file:
                 self.data = file
 
     def description(self):
