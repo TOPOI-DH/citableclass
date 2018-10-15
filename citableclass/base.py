@@ -96,9 +96,6 @@ class Citableloader(object):
                     self.link = "http://repositorytest.ancient-astronomy.org/"+r[1]+'/Repos'+r[1]+'/'+r[1]+r[3]+'/'+self.d
             except:
                 pass
-        elif types == 'local':
-            with open(self.path,'r') as file:
-                self.data = file
 
     def description(self):
         try:
@@ -313,10 +310,28 @@ class Citableloader(object):
         df.rename(columns={0: 'DOI', 1: 'Format'}, inplace=True)
         return df
 
-    def digitalresource(self,asDataframe=True):
+    def digitalresource(self, asDataframe=True):
         format = self.datatype().lower()
 
-        if format in ['', 'json', 'jsonOriented', 'xls','csv', 'xlsx'] and asDataframe:
+        if self.local:
+
+            def localJSON():
+                try:
+                    return pd.read_json(self.path, orient='table')
+                except:
+                    return pd.read_json(self.path)
+
+            localFunctionMap = {
+                'xls': pd.read_excel(self.path),
+                'xlsx': pd.read_excel(self.path),
+                'json': localJSON(),
+                'csv': pd.read_csv(self.path),
+                'pickle': pd.read_pickle(self.path),
+            }
+
+            return localFunctionMap[format]()
+
+        if format in ['', 'json', 'jsonOriented', 'xls', 'csv', 'xlsx'] and asDataframe:
             try:
                 df = pd.read_json(self.jsonOriented(), orient='table')
                 return df
