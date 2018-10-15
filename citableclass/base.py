@@ -111,16 +111,7 @@ class Citableloader(object):
         return strData
 
     def df(self, dtype=False):
-        if dtype == 'oriented':
-            df = pd.read_json(self.jsonOriented(), orient='table')
-        elif dtype == 'json':
-            df = pd.read_json(json.dumps(self.json()))
-        else:
-            try:
-                df = pd.DataFrame(self.json())
-            except:
-                raise ValueError('Cannot convert to dataframe.')
-        return df
+        return pd.DataFrame(self.json())
 
     def alternativefiles(self):
         return pd.DataFrame(self.alternatives.json())
@@ -306,8 +297,16 @@ class Citableloader(object):
         df.rename(columns={0: 'DOI', 1: 'Format'}, inplace=True)
         return df
 
-    def digitalresource(self):
+    def digitalresource(self,asDataframe=True):
         format = self.datatype().lower()
+
+        if format in ['', 'json', 'jsonOriented'] and asDataframe:
+            try:
+                df = pd.read_json(self.jsonOriented(), orient='table')
+            except:
+                df = pd.read_json(json.dumps(self.json()))
+            return df
+
         if format in ['ply', 'nxs', 'xyz']:
             self.threedFormat = format
 
@@ -315,6 +314,7 @@ class Citableloader(object):
             'xls': self.excel,
             'pdf': self.pdf,
             'json': self.json,
+            'jsonOriented': self.jsonOriented,
             'csv': self.csv,
             'image': self.imageshow,
             'images': self.imageshow,
