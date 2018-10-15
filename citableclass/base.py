@@ -317,7 +317,7 @@ class Citableloader(object):
             except:
                 pass
             try:
-                df = pd.read_csv(self.csv())
+                df = pd.DataFrame(list(self.csv()))
                 return df
             except:
                 pass
