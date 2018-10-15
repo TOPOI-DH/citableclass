@@ -74,6 +74,7 @@ class Citableloader(object):
 
 
         if types in ['doi', 'et', 'dev']:
+            self.local = False
             # Online data formats
             self.data = requests.get(self.response0.url + '?getDigitalFormat', verify=self.doVerify)
             self.alternatives = requests.get(self.response0.url + '?getAlternatives', verify=self.doVerify)
