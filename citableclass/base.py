@@ -68,28 +68,37 @@ class Citableloader(object):
                 self.url = 'http://repositorytest.ancient-astronomy.org/CitableHandler/' + collection + '/single/' + number + '/0'
             self.landingpage_url = re.sub('CitableHandler', 'collection', self.url)
             self.response0 = requests.get(self.url, verify=self.doVerify)
+        if types == 'local':
+            self.path = doi
+            self.local = True
 
-        self.data = requests.get(self.response0.url + '?getDigitalFormat', verify=self.doVerify)
-        self.alternatives = requests.get(self.response0.url + '?getAlternatives', verify=self.doVerify)
-        self.alternativefile = requests.get(self.response0.url + '?getAlternativeFile', verify=self.doVerify)
-        self.doi = doi
-        r = self.response0.url
-        try:
-            r = r.split("https://repository.edition-topoi.org/")[1]
-        except:
-            if types in ['doi', 'et']:
-                r = r.split("http://repository.edition-topoi.org/")[1]
-            elif types == 'dev':
-                r = r.split("http://repositorytest.ancient-astronomy.org/")[1]
-        r = r.split('/')
-        try:
-            self.d = re.findall("filename=(.+)", self.data.headers['Content-disposition'])[0].replace('\"', '')
-            if types in ['doi', 'et']:
-                self.link = "http://repository.edition-topoi.org/"+r[1]+'/Repos'+r[1]+'/'+r[1]+r[3]+'/'+self.d
-            elif types == 'dev':
-                self.link = "http://repositorytest.ancient-astronomy.org/"+r[1]+'/Repos'+r[1]+'/'+r[1]+r[3]+'/'+self.d
-        except:
-            pass
+
+        if types in ['doi', 'et', 'dev']:
+            # Online data formats
+            self.data = requests.get(self.response0.url + '?getDigitalFormat', verify=self.doVerify)
+            self.alternatives = requests.get(self.response0.url + '?getAlternatives', verify=self.doVerify)
+            self.alternativefile = requests.get(self.response0.url + '?getAlternativeFile', verify=self.doVerify)
+            self.doi = doi
+            r = self.response0.url
+            try:
+                r = r.split("https://repository.edition-topoi.org/")[1]
+            except:
+                if types in ['doi', 'et']:
+                    r = r.split("http://repository.edition-topoi.org/")[1]
+                elif types == 'dev':
+                    r = r.split("http://repositorytest.ancient-astronomy.org/")[1]
+            r = r.split('/')
+            try:
+                self.d = re.findall("filename=(.+)", self.data.headers['Content-disposition'])[0].replace('\"', '')
+                if types in ['doi', 'et']:
+                    self.link = "http://repository.edition-topoi.org/"+r[1]+'/Repos'+r[1]+'/'+r[1]+r[3]+'/'+self.d
+                elif types == 'dev':
+                    self.link = "http://repositorytest.ancient-astronomy.org/"+r[1]+'/Repos'+r[1]+'/'+r[1]+r[3]+'/'+self.d
+            except:
+                pass
+        elif types == 'local':
+            with open(path,'r') as file:
+                self.data = file
 
     def description(self):
         try:
@@ -158,6 +167,13 @@ class Citableloader(object):
         return self.d
 
     def datatype(self):
+        if self.local:
+            fileList = self.path.split(os.sep)[-1].split('.')
+            if len(fileList) > 1:
+                res = fileList[-1]
+            else:
+                res = fileList[0]
+            return res
         try:
             f = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
             if 'Format' in f['Technical characteristics']:
