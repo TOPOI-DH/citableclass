@@ -321,12 +321,21 @@ class Citableloader(object):
                 except:
                     return pd.read_json(self.path)
 
+            def localExcel():
+                return pd.read_excel(self.path)
+
+            def localCSV():
+                return pd.read_csv(self.path)
+
+            def localPickle():
+                return pd.read_pickle(self.path)
+
             localFunctionMap = {
-                'xls': pd.read_excel(self.path),
-                'xlsx': pd.read_excel(self.path),
-                'json': localJSON(),
-                'csv': pd.read_csv(self.path),
-                'pickle': pd.read_pickle(self.path),
+                'xls': localExcel,
+                'xlsx': localExcel,
+                'json': localJSON,
+                'csv': localCSV,
+                'pickle': localPickle,
             }
 
             return localFunctionMap[format]()
