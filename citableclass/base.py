@@ -300,7 +300,7 @@ class Citableloader(object):
     def digitalresource(self,asDataframe=True):
         format = self.datatype().lower()
 
-        if format in ['', 'json', 'jsonOriented', 'xls'] and asDataframe:
+        if format in ['', 'json', 'jsonOriented', 'xls','csv'] and asDataframe:
             try:
                 df = pd.read_json(self.jsonOriented(), orient='table')
                 return df
