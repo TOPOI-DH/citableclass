@@ -106,8 +106,21 @@ class Citableloader(object):
     def json(self):
         return self.data.json()
 
-    def df(self):
-        return pd.DataFrame(self.data.json())
+    def jsonOriented(self):
+        strData = json.dumps(self.json())
+        return strData
+
+    def df(self, dtype=False):
+        if dtype == 'oriented':
+            df = pd.read_json(self.jsonOriented(), orient='table')
+        elif dtype == 'json':
+            df = pd.read_json(json.dumps(self.json()))
+        else:
+            try:
+                df = pd.DataFrame(self.json())
+            except:
+                raise ValueError('Cannot convert to dataframe.')
+        return df
 
     def alternativefiles(self):
         return pd.DataFrame(self.alternatives.json())
