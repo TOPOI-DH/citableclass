@@ -300,16 +300,30 @@ class Citableloader(object):
     def digitalresource(self,asDataframe=True):
         format = self.datatype().lower()
 
-        if format in ['', 'json', 'jsonOriented'] and asDataframe:
+        if format in ['', 'json', 'jsonOriented', 'xls'] and asDataframe:
             try:
                 df = pd.read_json(self.jsonOriented(), orient='table')
+                return df
             except:
                 pass
             try:
                 df = pd.read_json(json.dumps(self.json()))
+                return df
             except:
-                raise ValueError('Could not decode file format: {0}. Is it a JSON file?'.format(format))
-            return df
+                pass
+            try:
+                df = pd.read_excel(self.excel())
+                return df
+            except:
+                pass
+            try:
+                df = pd.read_csv(self.csv())
+                return df
+            except:
+                pass
+
+        if format = '' and asDataframe:
+            raise ValueError('Could not convert {0} format to dataframe.'.format(format))
 
         if format in ['ply', 'nxs', 'xyz']:
             self.threedFormat = format
