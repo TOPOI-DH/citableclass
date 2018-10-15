@@ -316,7 +316,7 @@ class Citableloader(object):
     def digitalresource(self,asDataframe=True):
         format = self.datatype().lower()
 
-        if format in ['', 'json', 'jsonOriented', 'xls','csv'] and asDataframe:
+        if format in ['', 'json', 'jsonOriented', 'xls','csv', 'xlsx'] and asDataframe:
             try:
                 df = pd.read_json(self.jsonOriented(), orient='table')
                 return df
@@ -346,6 +346,7 @@ class Citableloader(object):
 
         functionMap = {
             'xls': self.excel,
+            'xlsx': self.excel,
             'pdf': self.pdf,
             'json': self.json,
             'jsonOriented': self.jsonOriented,
