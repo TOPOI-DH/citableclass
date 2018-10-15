@@ -322,7 +322,7 @@ class Citableloader(object):
             except:
                 pass
 
-        if format = '' and asDataframe:
+        if format == '' and asDataframe:
             raise ValueError('Could not convert {0} format to dataframe.'.format(format))
 
         if format in ['ply', 'nxs', 'xyz']:
