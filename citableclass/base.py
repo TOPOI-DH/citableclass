@@ -97,7 +97,15 @@ class Citableloader(object):
             except:
                 pass
 
+
+    ######
+    ##
+    ## General metadata functions
+    ##
+    #####
+
     def documentation(self):
+        """Returns the documentation for database objects."""
         try:
             res = requests.get(re.sub('/\d$','/1',self.url) + '?getDigitalFormat')
             df = df = pd.DataFrame([res.json()]).transpose()\
@@ -110,6 +118,7 @@ class Citableloader(object):
             print("No description available. Please try metadata()")
 
     def status(self):
+        """Publication status"""
         obj = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
         if 'status' in obj.keys():
             print(obj['status'])
@@ -141,11 +150,35 @@ class Citableloader(object):
             .set_properties(**{'text-align': 'left'})
         return style
 
+    def datatype(self):
+        if self.local:
+            fileList = self.path.split(os.sep)[-1].split('.')
+            if len(fileList) > 1:
+                res = fileList[-1]
+            else:
+                res = fileList[0]
+            return res
+        try:
+            f = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
+            if 'Format' in f['Technical characteristics']:
+                ret = f['Technical characteristics']['Format']
+            elif 'Resource Type' in f['Technical characteristics']:
+                ret = f['Technical characteristics']['Resource Type']
+        except:
+            raise ValueError("Can not determine regular format!")
+        return ret
+
     def getdoi(self):
         return self.doi
 
     def response(self):
         return self.response0.url + '?getDigitalFormat'
+
+    ######
+    ##
+    ## File specific functions
+    ##
+    #####
 
     def json(self):
         return self.data.json()
@@ -165,24 +198,6 @@ class Citableloader(object):
 
     def filename(self):
         return self.d
-
-    def datatype(self):
-        if self.local:
-            fileList = self.path.split(os.sep)[-1].split('.')
-            if len(fileList) > 1:
-                res = fileList[-1]
-            else:
-                res = fileList[0]
-            return res
-        try:
-            f = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
-            if 'Format' in f['Technical characteristics']:
-                ret = f['Technical characteristics']['Format']
-            elif 'Resource Type' in f['Technical characteristics']:
-                ret = f['Technical characteristics']['Resource Type']
-        except:
-            raise ValueError("Can not determine regular format!")
-        return ret
 
     def pdf(self):
         return HTML('<iframe src='+self.link+' width=900 height=550></iframe>')
@@ -269,7 +284,14 @@ class Citableloader(object):
     def landingpage(self):
         return HTML('<iframe src='+self.landingpage_url+' + width=120% height=650></iframe>')
 
+    ######
+    ##
+    ## Resource specific functions
+    ##
+    #####
+
     def resource(self):
+        """Returns all resources of a collection"""
         resources = []
         collectiondoi = self.doi.split("-")[0]+"-"+self.doi.split("-")[1]
         self.response0 = requests.get('https://dx.doi.org/{0}'.format(collectiondoi), verify=self.doVerify)
@@ -314,10 +336,18 @@ class Citableloader(object):
         return df
 
     def digitalresource(self, asDataframe=True):
+        """
+        Returns the digital resource by comparing the format (=type) of
+        resource and using the appropriate function.
+        If applicable the standard return type is a dataframe,
+        can be changed by choosing asDataframe=False.
+
+        Loading from local files is partialy supported for text-like files.
+        """
+
         format = self.datatype().lower()
 
         if self.local:
-
             def localJSON():
                 try:
                     return pd.read_json(self.path, orient='table')
