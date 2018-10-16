@@ -109,6 +109,38 @@ class Citableloader(object):
         except:
             print("No description available. Please try metadata()")
 
+    def status(self):
+        obj = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
+        if 'status' in obj.keys():
+            print(obj['status'])
+            return
+        try:
+            res = {
+                "Object": obj["General Information"]["Identifier"],
+                "Status": obj["General Information"]["Status"],
+                "Version": obj["General Information"]["Dev-Version"]
+                }
+            return res
+        except:
+            print("digital resource has publication status")
+
+
+    def metadata(self):
+        resDict = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
+        infoList = []
+        for fstLevelKey in resDict.keys():
+            for scndLevelKey in resDict[fstLevelKey].keys():
+                val = resDict[fstLevelKey][scndLevelKey]
+                if val != '':
+                    infoList.append((fstLevelKey, scndLevelKey, val))
+        df = pd.DataFrame(infoList)\
+            .rename(columns={0:'Metadata',1:'Key',2:'Value'})\
+            .set_index(['Metadata','Key'])
+        style = df.style\
+            .set_table_styles([{'selector': 'th', 'props': [('text-align','left')]}])\
+            .set_properties(**{'text-align': 'left'})
+        return style
+
     def getdoi(self):
         return self.doi
 
@@ -130,41 +162,6 @@ class Citableloader(object):
 
     def collection(self):
         return requests.get(self.response0.url + '?getOverallJSON', verify=self.doVerify).json()
-
-    def status(self):
-        obj = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
-        if 'status' in obj.keys():
-            print(obj['status'])
-            return
-        try:
-            res = {
-                "Object": obj["General Information"]["Identifier"],
-                "Status": obj["General Information"]["Status"],
-                "Version": obj["General Information"]["Dev-Version"]
-                }
-            return res
-        except:
-            print("digital resource has publication status")
-
-
-    def metadata(self):
-        b = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
-        c = list(b.keys())
-        finallist = []
-        for j in range(len(c)):
-            try:
-                gi = list(b[c[j]].keys())
-                finallist.append((c[j].upper(), ""))
-                for i in range(len(gi)):
-                    finallist.append((gi[i], b[c[j]][gi[i]]))
-            except:
-                pass
-        pd.set_option('max_colwidth', -1)
-        df = pd.DataFrame(finallist)
-        df.columns = [' ', '']
-        df.set_index([' '], drop=True, inplace=True)
-        df = df.style.set_properties(**{'text-align': 'left'})
-        return df
 
     def filename(self):
         return self.d
