@@ -104,7 +104,7 @@ class Citableloader(object):
                 .reset_index().rename(columns={'index':'Value',0:'Description'})
             style = df.style\
                 .set_table_styles([{'selector': 'th', 'props': [('text-align','left')]}])\
-                .set_properties(**{'text-align': 'left'})return df
+                .set_properties(**{'text-align': 'left'})
             return style
         except:
             print("No description available. Please try metadata()")
