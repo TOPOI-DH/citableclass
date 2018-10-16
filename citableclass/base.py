@@ -72,7 +72,6 @@ class Citableloader(object):
             self.path = doi
             self.local = True
 
-
         if types in ['doi', 'et', 'dev']:
             self.local = False
             # Online data formats
@@ -98,9 +97,15 @@ class Citableloader(object):
             except:
                 pass
 
-    def description(self):
+    def documentation(self):
         try:
-            return HTML('<iframe src=https://repository.edition-topoi.org/'+self.doi[:4]+'/Service'+self.doi[:4]+'/'+self.doi+'/documentation.pdf width=1200 height=550></iframe>')
+            res = requests.get(re.sub('/\d$','/1',self.url) + '?getDigitalFormat')
+            df = df = pd.DataFrame([res.json()]).transpose()\
+                .reset_index().rename(columns={'index':'Value',0:'Description'})
+            style = df.style\
+                .set_table_styles([{'selector': 'th', 'props': [('text-align','left')]}])\
+                .set_properties(**{'text-align': 'left'})return df
+            return style
         except:
             print("No description available. Please try metadata()")
 
