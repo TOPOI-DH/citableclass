@@ -111,7 +111,10 @@ class Citableloader(object):
             basepath = os.sep.join(parts[:-1])
             filePath = basepath + os.sep + doc_file
             try:
-                df = pd.DataFrame([filePath]).transpose()\
+                with open(filePath) as file:
+                    data = file.read()
+                    jsonData = json.loads(data)
+                df = pd.DataFrame([jsonData]).transpose()\
                     .reset_index().rename(columns={'index': 'Value', 0: 'Description'})
                 style = df.style\
                     .set_table_styles([{'selector': 'th', 'props': [('text-align', 'left')]}])\
