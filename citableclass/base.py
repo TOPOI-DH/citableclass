@@ -132,7 +132,7 @@ class Citableloader(object):
                 .set_properties(**{'text-align': 'left'})
             return style
         except:
-            print("No description available. Please try metadata()")
+            print("No documentation available. Please try .metadata()")
 
     def status(self):
         """Publication status"""
@@ -151,6 +151,24 @@ class Citableloader(object):
             print("digital resource has publication status")
 
     def metadata(self):
+        if self.local:
+            parts = self.path.split(os.sep)
+            meta_file = re.sub('\.([A-Za-z]+)', '_metadata.\g<1>', parts[-1])
+            basepath = os.sep.join(parts[:-1])
+            filePath = basepath + os.sep + meta_file
+            try:
+                with open(filePath) as file:
+                    data = file.read()
+                    jsonData = json.loads(data)
+                df = pd.DataFrame([jsonData]).transpose()\
+                    .reset_index().rename(columns={'index': 'Value', 0: 'Description'})
+                style = df.style\
+                    .set_table_styles([{'selector': 'th', 'props': [('text-align', 'left')]}])\
+                    .set_properties(**{'text-align': 'left'})
+                return style
+            except:
+                print("Found no metadata file at {0}.".format(filePath))
+                return
         resDict = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
         infoList = []
         for fstLevelKey in resDict.keys():
