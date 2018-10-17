@@ -97,21 +97,35 @@ class Citableloader(object):
             except:
                 pass
 
-
     ######
     ##
-    ## General metadata functions
+    #  General metadata functions
     ##
     #####
 
     def documentation(self):
         """Returns the documentation for database objects."""
+        if self.local:
+            parts = self.path.split(os.sep)
+            doc_file = re.sub('\.([A-Za-z]+)', '_documentation.\g<1>', parts[-1])
+            basepath = os.sep.join(parts[:-1])
+            filePath = basepath + os.sep + doc_file
+            try:
+                df = pd.DataFrame([filePath]).transpose()\
+                    .reset_index().rename(columns={'index': 'Value', 0: 'Description'})
+                style = df.style\
+                    .set_table_styles([{'selector': 'th', 'props': [('text-align', 'left')]}])\
+                    .set_properties(**{'text-align': 'left'})
+                return style
+            except:
+                print("Found no documentation file at {0}.".format(filePath))
+
         try:
-            res = requests.get(re.sub('/\d$','/1',self.url) + '?getDigitalFormat')
-            df = df = pd.DataFrame([res.json()]).transpose()\
-                .reset_index().rename(columns={'index':'Value',0:'Description'})
+            res = requests.get(re.sub('/\d$', '/1', self.url) + '?getDigitalFormat')
+            df = pd.DataFrame([res.json()]).transpose()\
+                .reset_index().rename(columns={'index': 'Value', 0: 'Description'})
             style = df.style\
-                .set_table_styles([{'selector': 'th', 'props': [('text-align','left')]}])\
+                .set_table_styles([{'selector': 'th', 'props': [('text-align', 'left')]}])\
                 .set_properties(**{'text-align': 'left'})
             return style
         except:
@@ -133,7 +147,6 @@ class Citableloader(object):
         except:
             print("digital resource has publication status")
 
-
     def metadata(self):
         resDict = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
         infoList = []
@@ -143,10 +156,10 @@ class Citableloader(object):
                 if val != '':
                     infoList.append((fstLevelKey, scndLevelKey, val))
         df = pd.DataFrame(infoList)\
-            .rename(columns={0:'Metadata',1:'Key',2:'Value'})\
-            .set_index(['Metadata','Key'])
+            .rename(columns={0: 'Metadata', 1: 'Key', 2: 'Value'})\
+            .set_index(['Metadata', 'Key'])
         style = df.style\
-            .set_table_styles([{'selector': 'th', 'props': [('text-align','left')]}])\
+            .set_table_styles([{'selector': 'th', 'props': [('text-align', 'left')]}])\
             .set_properties(**{'text-align': 'left'})
         return style
 
@@ -176,7 +189,7 @@ class Citableloader(object):
 
     ######
     ##
-    ## File specific functions
+    # File specific functions
     ##
     #####
 
@@ -286,7 +299,7 @@ class Citableloader(object):
 
     ######
     ##
-    ## Resource specific functions
+    # Resource specific functions
     ##
     #####
 
