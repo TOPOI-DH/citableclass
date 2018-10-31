@@ -5,7 +5,7 @@ setup(
     name="citableclass",
 
     # Version number (initial):
-    version="0.0.17",
+    version="0.0.18",
 
     # Application author details:
     author="Gordon Fischer, Malte Vogl",
@@ -42,13 +42,14 @@ setup(
         'Tracker': 'https://github.com/TOPOI-DH/citableclass/issues',
     },
 
-    download_url='https://github.com/TOPOI-DH/citableclass/archive/0.0.17.tar.gz',
+    download_url='https://github.com/TOPOI-DH/citableclass/archive/0.0.18.tar.gz',
 
     python_requires='>=3',
 
     # Dependent packages (distributions)
     install_requires=[
         "pandas",
+        "numpy",
         "matplotlib",
         "requests",
         "IPython",
