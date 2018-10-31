@@ -73,7 +73,7 @@ class Credentials(object):
         instList = []
 
         for key in self.authors.keys():
-            instList.extend(init.authors[key]['institutions'])
+            instList.extend(self.authors[key]['institutions'])
         instRep = {x + 1: y for x, y in enumerate(list(set(instList)))}
         revInst = {y: x for x, y in enumerate(list(set(instList)))}
         affRep = '; '.join(['{0}: {1}'.format(x, y) for x, y in instRep.items()])
