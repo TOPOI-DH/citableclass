@@ -43,7 +43,7 @@ class Citableloader(object):
           r.filename()
 
     """
-    def __init__(self, doi, types):
+    def __init__(self, doi, types, project):
         self.doVerify = True
         if types == "doi":
             self.url = 'https://dx.doi.org/'+doi
@@ -69,7 +69,20 @@ class Citableloader(object):
             self.landingpage_url = re.sub('CitableHandler', 'collection', self.url)
             self.response0 = requests.get(self.url, verify=self.doVerify)
         if types == 'local':
-            self.path = doi
+            self.project = project
+            if self.project is False:
+                print("Please set project='NAME' parameter, trying to guess data path...")
+                self.dataPath = '../data'
+            else:
+                self.docPath = os.path.expanduser('~') + '/ResearchCloud/Documentation'
+                try:
+                    with open('{0}/{1}.yml'.format(self.docPath, self.project)) as file:
+                        doc = yaml.load(file)
+                    self.dataPath = doc['dataFolder']
+                except FileNotFoundError as error:
+                    print("Could not read 'dataFolder' key in project {0}.yml file in {1}. Does it exist?".format(self.project, self.docPath))
+                    raise
+            self.path =  self.dataPath + '/' + doi
             self.local = True
 
         if types in ['doi', 'et', 'dev']:
@@ -96,6 +109,31 @@ class Citableloader(object):
                     self.link = "http://repositorytest.ancient-astronomy.org/"+r[1]+'/Repos'+r[1]+'/'+r[1]+r[3]+'/'+self.d
             except:
                 pass
+
+    ######
+    ##
+    #  Write local data in citable compatible format
+    ##
+    #####
+
+    def write(self, data):
+        """Write citable-formated data in local directory."""
+        if not self.local:
+            raise ValueError("Can only write local files.")
+        try:
+            if type(data) == pd.core.frame.DataFrame:
+                if not os.path.exists(self.dataPath):
+                    os.makedirs(self.dataPath)
+                try:
+                    file = open(self.path,'r')
+                except FileNotFoundError:
+                    file = open(self.path,'w')
+                data.to_json(self.path, orient='table')
+            else:
+                with open(self.path) as file:
+                    file.write(data)
+        except:
+            raise("Could not write file.")
 
     ######
     ##
@@ -456,7 +494,7 @@ class Citableloader(object):
 
 
 # Final Function
-def Citable(f_arg, *argv, formats="doi"):
+def Citable(f_arg, *argv, formats="doi", project=False):
     """
     Load resource via a DOI which points to a Citable:
       call the function:
@@ -499,15 +537,15 @@ def Citable(f_arg, *argv, formats="doi"):
         lis = list(f_arg)
         liste = []
         for arg in lis:
-            liste.append(Citableloader(arg, types=formats))
+            liste.append(Citableloader(arg, types=formats, project=project))
     if len(argv) == 0 and type(f_arg) is str:
-        liste = Citableloader(f_arg, types=formats)
+        liste = Citableloader(f_arg, types=formats,project=project)
     if len(argv) == 0 and type(f_arg) is not str:
         liste = []
         for arg in f_arg:
-            liste.append(Citableloader(arg, types=formats))
+            liste.append(Citableloader(arg, types=formats,project=project))
     if len(argv) != 0:
-        liste = [Citableloader(f_arg, types=formats)]
+        liste = [Citableloader(f_arg, types=formats,project=project)]
         for arg in argv:
-            liste.append(Citableloader(arg, types=formats))
+            liste.append(Citableloader(arg, types=formats,project=project))
     return liste
