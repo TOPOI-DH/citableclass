@@ -166,6 +166,12 @@ class Citableloader(object):
                 file = open(self.path, 'w')
                 fileVersion = self.path
 
+            if type(data) == pd.core.frame.DataFrame:
+                data.to_json(fileVersion, orient='table')
+            else:
+                with open(fileVersion) as file:
+                    file.write(data)
+
             try:
                 file = open(self.metadataPath, 'r')
             except:
@@ -201,12 +207,6 @@ class Citableloader(object):
                     docDict['Description'] = inKey
                 json.dump(docDict, open(self.documentationPath, 'w'))
                 print('Wrote documentation file {0}'.format(self.documentationPath))
-
-            if type(data) == pd.core.frame.DataFrame:
-                data.to_json(fileVersion, orient='table')
-            else:
-                with open(fileVersion) as file:
-                    file.write(data)
         except:
             raise("Could not write file.")
 
