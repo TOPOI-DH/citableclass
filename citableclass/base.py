@@ -87,7 +87,7 @@ class Citableloader(object):
                 try:
                     with open('{0}/{1}.yml'.format(self.docPath, self.project)) as file:
                         doc = yaml.load(file)
-                    self.dataPath = doc['dataFolder']
+                    self.dataPath = os.path.expanduser(doc['dataFolder'])
                 except FileNotFoundError as error:
                     print("Could not read 'dataFolder' key in project {0}.yml file in {1}. Does it exist?".format(self.project, self.docPath))
                     raise
