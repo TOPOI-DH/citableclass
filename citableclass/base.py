@@ -11,6 +11,12 @@ import pandas as pd
 import re
 import json
 import os
+import datetime
+
+def natural_sort(l):
+    convert = lambda text: int(text) if text.isdigit() else text.lower()
+    alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ]
+    return sorted(l, key = alphanum_key)
 
 
 class Citableloader(object):
@@ -71,8 +77,9 @@ class Citableloader(object):
         if types == 'local':
             self.project = project
             if self.project is False:
-                print("Please set project='NAME' parameter, trying to guess data path...")
-                self.dataPath = '../data'
+                print("Please set project='NAME' parameter, trying to guess data path and project name...")
+                self.dataPath = '..' + os.sep + 'data'
+                self.project = os.getcwd().split(os.sep)[-3]
             else:
                 self.docPath = os.path.expanduser('~') + '/ResearchCloud/Documentation'
                 try:
@@ -82,7 +89,21 @@ class Citableloader(object):
                 except FileNotFoundError as error:
                     print("Could not read 'dataFolder' key in project {0}.yml file in {1}. Does it exist?".format(self.project, self.docPath))
                     raise
-            self.path =  self.dataPath + '/' + doi
+            self.name = doi.split('.')[0].split('_')[0]
+            self.versions = []
+            for file in os.listdir(self.dataPath):
+                if file.startswith(self.name + '_v'):
+                    if 'metadata' not in file:
+                        if 'documentation' not in file:
+                            self.versions.append(file)
+            if len(self.versions) > 1:
+                latest = natural_sort(self.versions)[-1]
+                print('File version {0}'.format(latest))
+            else:
+                latest = doi
+            self.path = self.dataPath + '/' + latest
+            self.metadataPath = self.dataPath + '/' + self.name + '_metadata.json'
+            self.documentationPath = self.dataPath + '/' + self.name + '_documentation.json'
             self.local = True
 
         if types in ['doi', 'et', 'dev']:
@@ -121,16 +142,68 @@ class Citableloader(object):
         if not self.local:
             raise ValueError("Can only write local files.")
         try:
-            if type(data) == pd.core.frame.DataFrame:
-                if not os.path.exists(self.dataPath):
-                    os.makedirs(self.dataPath)
+            if not os.path.exists(self.dataPath):
+                os.makedirs(self.dataPath)
+            try:
+                file = open(self.path, 'r')
+                print('File exist, increasing version...')
+                parts = re.split('([0-9]+)', self.path)
+                if len(parts) > 2:
+                    if parts[-3].endswith('_v'):
+                        parts[-2] = int(parts[-2])
+                        parts[-2] += 1
+                        parts[-2] = str(parts[-2])
+                    else:
+                        parts[-2] + '_v1'
+                    fileVersion = ''.join(parts)
+                else:
+                    partsLess = self.path.split('.')
+                    partsLess[-1] = '_v1.' + partsLess[-1]
+                    fileVersion = '.'.join(partsLess[:-1]) + partsLess[-1]
+            except FileNotFoundError:
+                file = open(self.path, 'w')
+                fileVersion = self.path
+
+            try:
+                file = open(self.metadataPath, 'r')
+            except:
+                now = datetime.datetime.now()
+                print('Please add metadata:')
+                creators = input('Creators:')
+                title = input('Title:')
+                metaDict = {'Creators': creators, 'Title': title,
+                            'Date':  now.strftime("%d. %b. %Y"), 'Publisher': 'Edition Topoi',
+                            'Subtitle': '', 'Abstract': '', 'Description': '',
+                            'Further Information': '', 'Research Group': '',
+                            'Contributor Name': '', 'Contributor Type': '',
+                            'Institutions': '', 'Holder Digital Source': '',
+                            'Research Types': '', 'Format': type(data).__name__,
+                            'Language Source/Project': '', 'Geolocation/Region': '',
+                            'Subject': '', 'Keywords': '', 'Other': '',
+                            'CC Licence': 'CC BY-NC-SA 3.0: Attribution - NonCommercial - ShareAlike'}
+                json.dump(metaDict, open(self.metadataPath, 'w'))
+                print('Wrote metadata file {0}'.format(self.metadataPath))
+
+            try:
+                file = open(self.documentaPath, 'r')
+            except:
+                print('Please add documentation:')
                 try:
-                    file = open(self.path,'r')
-                except FileNotFoundError:
-                    file = open(self.path,'w')
-                data.to_json(self.path, orient='table')
+                    docDict = {}
+                    for key in data.keys():
+                        inKey = input(key + ':')
+                        docDict[key] = inKey
+                except:
+                    docDict = {}
+                    inKey = input('Description:')
+                    docDict['Description'] = inKey
+                json.dump(docDict, open(self.documentationPath, 'w'))
+                print('Wrote documentation file {0}'.format(self.documentationPath))
+
+            if type(data) == pd.core.frame.DataFrame:
+                data.to_json(fileVersion, orient='table')
             else:
-                with open(self.path) as file:
+                with open(fileVersion) as file:
                     file.write(data)
         except:
             raise("Could not write file.")
@@ -144,22 +217,23 @@ class Citableloader(object):
     def documentation(self):
         """Returns the documentation for database objects."""
         if self.local:
-            parts = self.path.split(os.sep)
-            doc_file = re.sub('\.([A-Za-z]+)', '_documentation.\g<1>', parts[-1])
-            basepath = os.sep.join(parts[:-1])
-            filePath = basepath + os.sep + doc_file
             try:
-                with open(filePath) as file:
+                with open(self.documentationPath) as file:
                     data = file.read()
                     jsonData = json.loads(data)
-                df = pd.DataFrame([jsonData]).transpose()\
-                    .reset_index().rename(columns={'index': 'Value', 0: 'Description'})
+                infoList = []
+                for fstLevelKey in jsonData.keys():
+                    val = jsonData[fstLevelKey]
+                    if val != '':
+                        infoList.append((fstLevelKey, val))
+                df = pd.DataFrame(infoList)\
+                    .rename(columns={0: 'Value', 1: 'Description'})
                 style = df.style\
                     .set_table_styles([{'selector': 'th', 'props': [('text-align', 'left')]}])\
                     .set_properties(**{'text-align': 'left'})
                 return style
             except:
-                print("Found no documentation file at {0}.".format(filePath))
+                print("Found no documentation file at {0}.".format(self.documentationPath))
 
         try:
             res = requests.get(re.sub('/\d$', '/1', self.url) + '?getDigitalFormat')
@@ -190,22 +264,22 @@ class Citableloader(object):
 
     def metadata(self):
         if self.local:
-            parts = self.path.split(os.sep)
-            meta_file = re.sub('\.([A-Za-z]+)', '_metadata.\g<1>', parts[-1])
-            basepath = os.sep.join(parts[:-1])
-            filePath = basepath + os.sep + meta_file
             try:
-                with open(filePath) as file:
+                with open(self.metadataPath) as file:
                     data = file.read()
                     jsonData = json.loads(data)
-                df = pd.DataFrame([jsonData]).transpose()\
-                    .reset_index().rename(columns={'index': 'Value', 0: 'Description'})
+                infoList = []
+                for fstLevelKey in jsonData.keys():
+                    val = jsonData[fstLevelKey]
+                    if val != '':
+                        infoList.append((fstLevelKey, val))
+                df = pd.DataFrame(infoList).rename(columns={0: 'Key', 1: 'Value'})
                 style = df.style\
                     .set_table_styles([{'selector': 'th', 'props': [('text-align', 'left')]}])\
                     .set_properties(**{'text-align': 'left'})
                 return style
             except:
-                print("Found no metadata file at {0}.".format(filePath))
+                print("Found no metadata file at {0}.".format(self.metadataPath))
                 return
         resDict = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
         infoList = []
