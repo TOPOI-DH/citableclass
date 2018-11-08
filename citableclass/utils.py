@@ -7,6 +7,38 @@ import numpy as np
 import pandas as pd
 
 
+class CollectionResources(object):
+    """
+    Return all resources for local research project.
+    """
+
+    def __init__(self, project=False):
+        self.project = project
+        if self.project is False:
+            print("Please set project='NAME' parameter, trying to guess data path and project name...")
+            self.dataPath = '..' + os.sep + 'data'
+            self.project = os.getcwd().split(os.sep)[-3]
+        else:
+            self.docPath = os.path.expanduser('~') + '/ResearchCloud/Documentation'
+            try:
+                with open('{0}/{1}.yml'.format(self.docPath, self.project)) as file:
+                    doc = yaml.load(file)
+                self.dataPath = os.path.expanduser(doc['dataFolder'])
+            except FileNotFoundError as error:
+                print("Could not read 'dataFolder' key in project {0}.yml file in {1}. Does it exist?".format(self.project, self.docPath))
+                raise
+
+    def get(self):
+        self.dataList = []
+        allFiles = os.listdir(self.dataPath)
+        for file in allFiles:
+            name = file.split('.')[0].split('_')[0]
+            if name + '_documentation.json' in allFiles:
+                if name + '_metadata.json' in allFiles:
+                    self.dataList.append(file)
+        return self.dataList
+
+
 class Credentials(object):
     """
     Create title page for notebook.

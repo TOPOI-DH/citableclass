@@ -1,2 +1,2 @@
 from .base import Citable
-from .utils import Credentials, Json2DF
+from .utils import Credentials, Json2DF, CollectionResources
