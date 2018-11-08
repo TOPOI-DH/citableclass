@@ -92,12 +92,11 @@ class Citableloader(object):
                     print("Could not read 'dataFolder' key in project {0}.yml file in {1}. Does it exist?".format(self.project, self.docPath))
                     raise
             self.name = doi.split('.')[0].split('_')[0]
-            self.versions = [doi]
+            versions = [doi]
             for file in os.listdir(self.dataPath):
                 if file.startswith(self.name + '_v'):
-                    if 'metadata' not in file:
-                        if 'documentation' not in file:
-                            self.versions.append(file)
+                    versions.append(file)
+            self.versions = [x for x in versions if not ('_metadata' in x or '_documentation' in x)]
             if len(self.versions) > 1:
                 latest = natural_sort(self.versions)[-1]
                 print('File version {0}'.format(latest))

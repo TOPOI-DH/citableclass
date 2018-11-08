@@ -5,39 +5,41 @@ import time
 import os
 import numpy as np
 import pandas as pd
+from .base import Citable
 
 
-class CollectionResources(object):
+def collectionResources(project=False, formats='local'):
     """
     Return all resources for local research project.
     """
-
-    def __init__(self, project=False):
-        self.project = project
-        if self.project is False:
+    if formats == 'local':
+        if project is False:
             print("Please set project='NAME' parameter, trying to guess data path and project name...")
-            self.dataPath = '..' + os.sep + 'data'
-            self.project = os.getcwd().split(os.sep)[-3]
+            dataPath = '..' + os.sep + 'data'
+            project = os.getcwd().split(os.sep)[-3]
         else:
-            self.docPath = os.path.expanduser('~') + '/ResearchCloud/Documentation'
+            docPath = os.path.expanduser('~') + '/ResearchCloud/Documentation'
             try:
-                with open('{0}/{1}.yml'.format(self.docPath, self.project)) as file:
+                with open('{0}/{1}.yml'.format(docPath, project)) as file:
                     doc = yaml.load(file)
-                self.dataPath = os.path.expanduser(doc['dataFolder'])
+                dataPath = os.path.expanduser(doc['dataFolder'])
             except FileNotFoundError as error:
                 print("Could not read 'dataFolder' key in project {0}.yml file in {1}. Does it exist?".format(self.project, self.docPath))
                 raise
 
-    def get(self):
-        self.dataList = []
-        allFiles = os.listdir(self.dataPath)
+        dataList = []
+        allFiles = os.listdir(dataPath)
         for file in allFiles:
             name = file.split('.')[0].split('_')[0]
             if name + '_documentation.json' in allFiles:
                 if name + '_metadata.json' in allFiles:
-                    self.dataList.append(file)
-        return self.dataList
-
+                    dataList.append(file)
+        dataList = [x for x in dataList if not ('_metadata' in x or '_documentation' in x)]
+        return dataList
+    else:
+        if formats != 'local':
+            cite = Citable(project, formats=formats)
+            return cite.resource()
 
 class Credentials(object):
     """
