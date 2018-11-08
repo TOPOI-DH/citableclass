@@ -53,5 +53,6 @@ setup(
         "matplotlib",
         "requests",
         "IPython",
+        "pyyaml"
     ]
 )

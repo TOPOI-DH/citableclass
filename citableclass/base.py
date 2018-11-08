@@ -193,7 +193,7 @@ class Citableloader(object):
                 print('Wrote metadata file {0}'.format(self.metadataPath))
 
             try:
-                file = open(self.documentaPath, 'r')
+                file = open(self.documentationPath, 'r')
             except:
                 print('Please add documentation:')
                 try:
