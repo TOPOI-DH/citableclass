@@ -92,7 +92,7 @@ class Citableloader(object):
                     print("Could not read 'dataFolder' key in project {0}.yml file in {1}. Does it exist?".format(self.project, self.docPath))
                     raise
             self.name = doi.split('.')[0].split('_')[0]
-            self.versions = []
+            self.versions = [doi]
             for file in os.listdir(self.dataPath):
                 if file.startswith(self.name + '_v'):
                     if 'metadata' not in file:
@@ -139,7 +139,7 @@ class Citableloader(object):
     ##
     #####
 
-    def write(self, data):
+    def write(self, data, newVersion=False):
         """Write citable-formated data in local directory."""
         if not self.local:
             raise ValueError("Can only write local files.")
@@ -147,21 +147,25 @@ class Citableloader(object):
             if not os.path.exists(self.dataPath):
                 os.makedirs(self.dataPath)
             try:
-                file = open(self.path, 'r')
-                print('File exist, increasing version...')
-                parts = re.split('([0-9]+)', self.path)
-                if len(parts) > 2:
-                    if parts[-3].endswith('_v'):
-                        parts[-2] = int(parts[-2])
-                        parts[-2] += 1
-                        parts[-2] = str(parts[-2])
+                if newVersion:
+                    file = open(self.path, 'r')
+                    print('File exist, increasing version...')
+                    parts = re.split('([0-9]+)', self.path)
+                    if len(parts) > 2:
+                        if parts[-3].endswith('_v'):
+                            parts[-2] = int(parts[-2])
+                            parts[-2] += 1
+                            parts[-2] = str(parts[-2])
+                        else:
+                            parts[-2] + '_v1'
+                        fileVersion = ''.join(parts)
                     else:
-                        parts[-2] + '_v1'
-                    fileVersion = ''.join(parts)
+                        partsLess = self.path.split('.')
+                        partsLess[-1] = '_v1.' + partsLess[-1]
+                        fileVersion = '.'.join(partsLess[:-1]) + partsLess[-1]
+                    self.path = fileVersion
                 else:
-                    partsLess = self.path.split('.')
-                    partsLess[-1] = '_v1.' + partsLess[-1]
-                    fileVersion = '.'.join(partsLess[:-1]) + partsLess[-1]
+                    fileVersion = self.path
             except FileNotFoundError:
                 file = open(self.path, 'w')
                 fileVersion = self.path
