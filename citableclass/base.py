@@ -91,7 +91,14 @@ class Citableloader(object):
                 except FileNotFoundError as error:
                     print("Could not read 'dataFolder' key in project {0}.yml file in {1}. Does it exist?".format(self.project, self.docPath))
                     raise
-            self.name = doi.split('.')[0].split('_')[0]
+            parts = doi.split('.')[0].split('_')
+            if len(parts) > 2:
+                name = '_'.join(parts[:-1])
+            elif len(parts) > 1:
+                name = '_'.join(parts)
+            else:
+                name = parts[0]
+            self.name = name
             versions = [doi]
             for file in os.listdir(self.dataPath):
                 if file.startswith(self.name + '_v'):
