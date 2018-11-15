@@ -7,6 +7,16 @@ import numpy as np
 import pandas as pd
 from .base import Citable
 
+def getName(doi):
+    parts = doi.split('.')[0].split('_')
+    if len(parts) > 2:
+        name = '_'.join(parts[:-1])
+    elif len(parts) > 1:
+        name = '_'.join(parts)
+    else:
+        name = parts[0]
+    return name
+
 
 def collectionResources(project=False, formats='local'):
     """
@@ -30,7 +40,7 @@ def collectionResources(project=False, formats='local'):
         dataList = []
         allFiles = os.listdir(dataPath)
         for file in allFiles:
-            name = file.split('.')[0].split('_')[0]
+            name = getName(file)
             if name + '_documentation.json' in allFiles:
                 if name + '_metadata.json' in allFiles:
                     dataList.append(file)
