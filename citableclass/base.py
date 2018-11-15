@@ -13,6 +13,7 @@ import json
 import yaml
 import os
 import datetime
+import shutil
 
 
 def natural_sort(l):
@@ -185,40 +186,50 @@ class Citableloader(object):
             try:
                 file = open(self.metadataPath, 'r')
             except:
-                now = datetime.datetime.now()
-                print('Please add metadata:')
-                creators = input('Creators:')
-                title = input('Title:')
-                metaDict = {'Creators': creators, 'Title': title,
-                            'Date':  now.strftime("%d. %b. %Y"), 'Publisher': 'Edition Topoi',
-                            'Subtitle': '', 'Abstract': '', 'Description': '',
-                            'Further Information': '', 'Research Group': '',
-                            'Contributor Name': '', 'Contributor Type': '',
-                            'Institutions': '', 'Holder Digital Source': '',
-                            'Research Types': '', 'Format': type(data).__name__,
-                            'Language Source/Project': '', 'Geolocation/Region': '',
-                            'Subject': '', 'Keywords': '', 'Other': '',
-                            'CC Licence': 'CC BY-NC-SA 3.0: Attribution - NonCommercial - ShareAlike'}
-                json.dump(metaDict, open(self.metadataPath, 'w'))
-                print('Wrote metadata file {0}'.format(self.metadataPath))
+                useExisting = input('Use existing metadata? (y/N):')
+                if useExisting == 'y':
+                    path = input('Enter filename:')
+                    shutil.copy2(self.dataPath + os.sep + path, self.metadataPath)
+                else:
+                    now = datetime.datetime.now()
+                    # print('Please add metadata:')
+                    creators = input('Creators:')
+                    title = input('Title:')
+                    metaDict = {'Creators': creators, 'Title': title,
+                                'Date':  now.strftime("%d. %b. %Y"), 'Publisher': 'Edition Topoi',
+                                'Subtitle': '', 'Abstract': '', 'Description': '',
+                                'Further Information': '', 'Research Group': '',
+                                'Contributor Name': '', 'Contributor Type': '',
+                                'Institutions': '', 'Holder Digital Source': '',
+                                'Research Types': '', 'Format': type(data).__name__,
+                                'Language Source/Project': '', 'Geolocation/Region': '',
+                                'Subject': '', 'Keywords': '', 'Other': '',
+                                'CC Licence': 'CC BY-NC-SA 3.0: Attribution - NonCommercial - ShareAlike'}
+                    json.dump(metaDict, open(self.metadataPath, 'w'))
+                    print('Wrote metadata file {0}'.format(self.metadataPath))
 
             try:
                 file = open(self.documentationPath, 'r')
             except:
-                print('Please add documentation:')
-                try:
-                    docDict = {}
-                    for key in data.keys():
-                        inKey = input(key + ':')
-                        docDict[key] = inKey
-                except:
-                    docDict = {}
-                    inKey = input('Description:')
-                    docDict['Description'] = inKey
-                json.dump(docDict, open(self.documentationPath, 'w'))
-                print('Wrote documentation file {0}'.format(self.documentationPath))
+                # print('Please add documentation:')
+                useExisting = input('Use existing documentation? (y/N):')
+                if useExisting == 'y':
+                    path = input('Enter filename:')
+                    shutil.copy2(self.dataPath + os.sep + path, self.documentationPath)
+                else:
+                    try:
+                        docDict = {}
+                        for key in data.keys():
+                            inKey = input(key + ':')
+                            docDict[key] = inKey
+                    except:
+                        docDict = {}
+                        inKey = input('Description:')
+                        docDict['Description'] = inKey
+                    json.dump(docDict, open(self.documentationPath, 'w'))
+                    print('Wrote documentation file {0}'.format(self.documentationPath))
         except:
-            raise("Could not write file.")
+            raise IOError("Could not write file.")
 
     ######
     ##
