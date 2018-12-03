@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from .base import Citable
 
+
 def getName(doi):
     parts = doi.split('.')[0].split('_')
     if len(parts) > 2:
@@ -50,6 +51,7 @@ def collectionResources(project=False, formats='local'):
         if formats != 'local':
             cite = Citable(project, formats=formats)
             return cite.resource()
+
 
 class Credentials(object):
     """

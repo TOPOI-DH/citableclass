@@ -459,10 +459,11 @@ class Citableloader(object):
     ##
     #####
 
-    def resource(self):
+    def resources(self):
         """Returns all resources of a collection"""
         resources = []
-        collectiondoi = self.doi.split("-")[0]+"-"+self.doi.split("-")[1]
+        doiPart = self.doi.split("-")
+        collectiondoi = doiPart[0] + "-" + doiPart[1]
         self.response0 = requests.get('https://dx.doi.org/{0}'.format(collectiondoi), verify=self.doVerify)
         objectdata = requests.get(self.response0.url + '?getOverallJSON', verify=self.doVerify).json()
         objectdatakeys = list(objectdata.keys())
@@ -478,31 +479,67 @@ class Citableloader(object):
             return val
 
         val = check(self.doi)
-        if val == -1:
-            print("the current doi corresponds to a digital resource, it is not a research object!")
-        if val != -1:
-            try:
-                resourcentypes = list(objectdata[val]["resources"].keys())
-                for m in range(len(resourcentypes)):
-                    try:
-                        for p in range(len(list(objectdata[val]["resources"][resourcentypes[m]].keys()))):
-                            key1 = list(objectdata[val]["resources"][resourcentypes[m]].keys())[p]
-                            for j in range(len(objectdata[val]["resources"][resourcentypes[m]][key1]['resources'])):
-                                try:
-                                    formats = objectdata[val]["resources"][resourcentypes[m]][key1]['resources'][j]['metadata']['Technical characteristics']['Format']
-                                except:
-                                    formats = resourcentypes[m]
-                                doi = objectdata[val]["resources"][resourcentypes[m]][key1]['resources'][j]['metadata']['General Information']['DOI']
-
-                                resources.append((doi, formats))
-                    except:
-                        pass
-            except:
-                pass
+        if len(doiPart) > 2 and val == -1:
+            print("The current DOI {0} corresponds to a digital resource, it is not a research object!".format(self.doi))
+            return
+        elif (len(doiPart) > 2 and val != -1):
+            resources = self._getResource(val)
+        elif (len(doiPart) == 2 and val == -1):
+            resources = self._getResource()
 
         df = pd.DataFrame(resources)
-        df.rename(columns={0: 'DOI', 1: 'Format'}, inplace=True)
+        df.rename(columns={0: 'DOI', 1: 'Type', 2: 'Format'}, inplace=True)
         return df
+
+    def _getResource(self, val=False):
+        resources = []
+
+        doiPart = self.doi.split("-")
+        collectiondoi = doiPart[0] + "-" + doiPart[1]
+        self.response0 = requests.get('https://dx.doi.org/{0}'.format(collectiondoi), verify=self.doVerify)
+        objectdata = requests.get(self.response0.url + '?getOverallJSON', verify=self.doVerify).json()
+        objectdatakeys = list(objectdata.keys())
+
+        def getObjRes(objKey):
+            curObj = objectdata[objKey]
+            curObjRes = curObj["resources"]
+            try:
+                for resKey in curObjRes.keys():
+                    try:
+                        curRes = curObjRes[resKey]
+                        for key in curRes.keys():
+                            try:
+                                techChar = curRes[key]['metadata']['Technical characteristics']
+                                resType = techChar['Resource Type']
+                                resFormat = techChar['Format']
+                            except:
+                                pass
+                            for elem in curRes[key]["resources"]:
+                                try:
+                                    doi = elem["metadata"]["General Information"]["DOI"]
+                                except:
+                                    doi = 'None'
+                                try:
+                                    resType = elem["metadata"]["Technical characteristics"]["Resource Type"]
+                                except:
+                                    resType = 'None'
+                                try:
+                                    resFormat = elem["metadata"]["Technical characteristics"]["Format"]
+                                except:
+                                    resFormat = 'None'
+                                resources.append((doi, resType, resFormat))
+                    except:
+                        pass
+            except AttributeError:
+                pass
+
+        if not val:
+            for objKey in objectdata.keys():
+                getObjRes(objKey)
+        elif val:
+            getObjRes(val)
+
+        return resources
 
     def digitalresource(self, asDataframe=True):
         """
