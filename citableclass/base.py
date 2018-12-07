@@ -306,7 +306,10 @@ class Citableloader(object):
                 return
 
         doiPart = self.doi.split("-")
-        collectiondoi = doiPart[0] + "-" + doiPart[1]
+        try:
+            collectiondoi = doiPart[0] + "-" + doiPart[1]
+        except:
+            pass
         if len(doiPart) == 2:
             print('Collection')
             resDict = requests.get(self.response0.url, verify=self.doVerify).json()
@@ -685,13 +688,13 @@ def Citable(f_arg, *argv, formats="doi", project=False):
         for arg in lis:
             liste.append(Citableloader(arg, types=formats, project=project))
     if len(argv) == 0 and type(f_arg) is str:
-        liste = Citableloader(f_arg, types=formats,project=project)
+        liste = Citableloader(f_arg, types=formats, project=project)
     if len(argv) == 0 and type(f_arg) is not str:
         liste = []
         for arg in f_arg:
-            liste.append(Citableloader(arg, types=formats,project=project))
+            liste.append(Citableloader(arg, types=formats, project=project))
     if len(argv) != 0:
-        liste = [Citableloader(f_arg, types=formats,project=project)]
+        liste = [Citableloader(f_arg, types=formats, project=project)]
         for arg in argv:
-            liste.append(Citableloader(arg, types=formats,project=project))
+            liste.append(Citableloader(arg, types=formats, project=project))
     return liste
