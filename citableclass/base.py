@@ -304,13 +304,25 @@ class Citableloader(object):
             except:
                 print("Found no metadata file at {0}.".format(self.metadataPath))
                 return
-        resDict = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
+
+        doiPart = self.doi.split("-")
+        collectiondoi = doiPart[0] + "-" + doiPart[1]
+        if len(doiPart) == 2:
+            print('Collection')
+            resDict = requests.get(self.response0.url, verify=self.doVerify).json()
+        else:
+            resDict = requests.get(self.response0.url + '?getDigitalFormats', verify=self.doVerify).json()
         infoList = []
         for fstLevelKey in resDict.keys():
-            for scndLevelKey in resDict[fstLevelKey].keys():
-                val = resDict[fstLevelKey][scndLevelKey]
+            try:
+                for scndLevelKey in resDict[fstLevelKey].keys():
+                    val = resDict[fstLevelKey][scndLevelKey]
+                    if val != '':
+                        infoList.append((fstLevelKey, scndLevelKey, val))
+            except:
+                val = resDict[fstLevelKey]
                 if val != '':
-                    infoList.append((fstLevelKey, scndLevelKey, val))
+                    infoList.append((fstLevelKey, ' ', val))
         df = pd.DataFrame(infoList)\
             .rename(columns={0: 'Metadata', 1: 'Key', 2: 'Value'})\
             .set_index(['Metadata', 'Key'])
