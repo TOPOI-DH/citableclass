@@ -25,7 +25,7 @@ def natural_sort(l):
 class Citableloader(object):
     """
     Load resource via a DOI which points to a Citable:
-      call the function:
+      call this function:
 
         - resource = Citableloader(DOI)  #for a single DOI
 
