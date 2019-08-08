@@ -84,7 +84,8 @@ class Citableloader(object):
                 self.dataPath = '..' + os.sep + 'data'
                 self.project = os.getcwd().split(os.sep)[-3]
             else:
-                self.docPath = os.path.expanduser('~') + '/ResearchCloud/Documentation'
+                self.docPath = os.path.join(os.path.expanduser('~'), 'ResearchCloud','Documentation')
+                #self.docPath = os.path.expanduser('~') + '/ResearchCloud/Documentation'
                 try:
                     with open('{0}/{1}.yml'.format(self.docPath, self.project)) as file:
                         doc = yaml.load(file)
